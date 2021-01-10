@@ -12,7 +12,7 @@
 <meta name="author" content="Mateusz Baryła" />
 
 
-<title>UL</title>
+<title>UL project clustering and dimension reduction</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -384,31 +384,2510 @@ summary {
 
 
 
-<h1 class="title toc-ignore">UL</h1>
+<h1 class="title toc-ignore">UL project clustering and dimension reduction</h1>
 <h4 class="author">Mateusz Baryła</h4>
 <h4 class="date">6 12 2020</h4>
 
 </div>
 
 
-<div id="r-markdown" class="section level2">
-<h2>R Markdown</h2>
-<p>This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
-<p>When you click the <strong>Knit</strong> button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:</p>
-<pre class="r"><code>summary(cars)</code></pre>
-<pre><code>##      speed           dist       
-##  Min.   : 4.0   Min.   :  2.00  
-##  1st Qu.:12.0   1st Qu.: 26.00  
-##  Median :15.0   Median : 36.00  
-##  Mean   :15.4   Mean   : 42.98  
-##  3rd Qu.:19.0   3rd Qu.: 56.00  
-##  Max.   :25.0   Max.   :120.00</code></pre>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Clustering in an unsupervised learning technique that uses machine learning algorithms to assign similar data to groups. Mostly it is used for knowledge discovery of hidden patterns found within data. The main idea is to cluster similar observations that they are grouped together. The more diverse groups the better.</p>
 </div>
-<div id="including-plots" class="section level2">
-<h2>Including Plots</h2>
-<p>You can also embed plots, for example:</p>
-<p><img src="data:image/png;base64,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" width="672" /></p>
-<p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
+<div id="dataset" class="section level2">
+<h2>Dataset</h2>
+<div id="international-politcal-economy" class="section level3">
+<h3>International Politcal Economy</h3>
+<p>International Political Economy is a discipline that discusses economics, politics and international relations. The main areas of economics that are covered by IPE are the following fields of macroeconomics, international business, international development and development economics.</p>
+</div>
+<div id="the-nature-of-the-dataset" class="section level3">
+<h3>The nature of the dataset</h3>
+<p>In order to provide master dataset that can be used by researchers from international political economy 89 data resources have been merged. Observations are identified by country-year the unit of analysis. Countries are identified by Gleditsch-Ward number ot in an alternative version by Correlates of War (COW). Most of the dataset components begin after Second World War.</p>
+</div>
+<div id="variable-naming" class="section level3">
+<h3>Variable naming</h3>
+<p>Each of 89 dataset has been given a unique suffix that uniquely identifies it.</p>
+</div>
+</div>
+<div id="dataset-preprocessing" class="section level2">
+<h2>Dataset preprocessing</h2>
+<p>Firstly data is loaded, then we convert it to tibble as tidyverse will be mainly used in this project.</p>
+<pre class="r"><code>load(paste0(&quot;data/&quot;, &quot;master_ipe_v4.rdata&quot;))
+ipe_v4 &lt;- as_tibble(ipe_v4)</code></pre>
+<p>Dimensions of the dataset needs to be investigated as well.</p>
+<pre class="r"><code>ipe_v4 %&gt;% dim()</code></pre>
+<p>[1] 25850 1043</p>
+<p>Master table consists of 25850 rows and 1043 variables. Each of them is described in the codebook provided by library maintainers. They are divided into following groups: * economic * political * social and cultural * geographic * other (e.g. infrastructure, military)</p>
+<p>Very good quality of the data is provided by Varities of Democracy Dataset (VDEM) inside political section, it will definitely be included not only because of the quality but also its popularity and inside class recommendation.</p>
+<p>The other dataset chosen by me is going to be “Polity IV Democracy”.</p>
+<pre class="r"><code>pol_ds &lt;- 
+  ipe_v4 %&gt;% 
+  filter(country == &quot;Poland&quot;, year &gt; 1918, !(year %in% c(1939, 1940, 1941, 1942, 1943, 1944, 1945, 2020))) %&gt;% 
+  select(country, year, starts_with(&quot;v2&quot;), contains(&quot;P4&quot;), -c(change_P4, sf_P4, regtrans_P4, countryname_raw_P4)) 
+pol_ds %&gt;%
+  head() %&gt;% 
+  kable()</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+country
+</th>
+<th style="text-align:right;">
+year
+</th>
+<th style="text-align:right;">
+v2x_polyarchy_VDEM
+</th>
+<th style="text-align:right;">
+v2x_api_VDEM
+</th>
+<th style="text-align:right;">
+v2x_mpi_VDEM
+</th>
+<th style="text-align:right;">
+v2x_EDcomp_thick_VDEM
+</th>
+<th style="text-align:right;">
+v2x_libdem_VDEM
+</th>
+<th style="text-align:right;">
+v2x_liberal_VDEM
+</th>
+<th style="text-align:right;">
+v2x_partipdem_VDEM
+</th>
+<th style="text-align:right;">
+v2x_partip_VDEM
+</th>
+<th style="text-align:right;">
+v2x_delibdem_VDEM
+</th>
+<th style="text-align:right;">
+v2xdl_delib_VDEM
+</th>
+<th style="text-align:right;">
+v2x_egaldem_VDEM
+</th>
+<th style="text-align:right;">
+v2x_egal_VDEM
+</th>
+<th style="text-align:right;">
+v2x_frassoc_thick_VDEM
+</th>
+<th style="text-align:right;">
+v2x_freexp_altinf_VDEM
+</th>
+<th style="text-align:right;">
+v2xme_altinf_VDEM
+</th>
+<th style="text-align:right;">
+v2x_suffr_VDEM
+</th>
+<th style="text-align:right;">
+v2xel_frefair_VDEM
+</th>
+<th style="text-align:right;">
+v2x_elecoff_VDEM
+</th>
+<th style="text-align:right;">
+v2xcl_rol_VDEM
+</th>
+<th style="text-align:right;">
+v2x_jucon_VDEM
+</th>
+<th style="text-align:right;">
+v2xlg_legcon_VDEM
+</th>
+<th style="text-align:right;">
+v2x_cspart_VDEM
+</th>
+<th style="text-align:right;">
+v2xdd_dd_VDEM
+</th>
+<th style="text-align:right;">
+v2xel_locelec_VDEM
+</th>
+<th style="text-align:right;">
+v2xel_regelec_VDEM
+</th>
+<th style="text-align:right;">
+v2xeg_eqprotec_VDEM
+</th>
+<th style="text-align:right;">
+v2xeg_eqdr_VDEM
+</th>
+<th style="text-align:right;">
+v2xcs_ccsi_VDEM
+</th>
+<th style="text-align:right;">
+v2xps_party_VDEM
+</th>
+<th style="text-align:right;">
+v2x_gender_VDEM
+</th>
+<th style="text-align:right;">
+v2x_gencl_VDEM
+</th>
+<th style="text-align:right;">
+v2x_gencs_VDEM
+</th>
+<th style="text-align:right;">
+v2x_genpp_VDEM
+</th>
+<th style="text-align:right;">
+v2x_elecreg_VDEM
+</th>
+<th style="text-align:right;">
+v2xex_elecreg_VDEM
+</th>
+<th style="text-align:right;">
+v2xlg_elecreg_VDEM
+</th>
+<th style="text-align:right;">
+v2xel_elecparl_VDEM
+</th>
+<th style="text-align:right;">
+v2xlg_leginter_VDEM
+</th>
+<th style="text-align:right;">
+v2xel_elecpres_VDEM
+</th>
+<th style="text-align:right;">
+v2x_hosinter_VDEM
+</th>
+<th style="text-align:right;">
+v2x_corr_VDEM
+</th>
+<th style="text-align:right;">
+v2x_pubcorr_VDEM
+</th>
+<th style="text-align:right;">
+v2x_execorr_VDEM
+</th>
+<th style="text-align:right;">
+v2x_divparctrl_VDEM
+</th>
+<th style="text-align:right;">
+v2x_feduni_VDEM
+</th>
+<th style="text-align:right;">
+v2x_civlib_VDEM
+</th>
+<th style="text-align:right;">
+v2x_clphy_VDEM
+</th>
+<th style="text-align:right;">
+v2x_clpol_VDEM
+</th>
+<th style="text-align:right;">
+v2x_clpriv_VDEM
+</th>
+<th style="text-align:right;">
+v2elsrgel_VDEM
+</th>
+<th style="text-align:right;">
+v2elreggov_VDEM
+</th>
+<th style="text-align:right;">
+v2cltrnslw_VDEM
+</th>
+<th style="text-align:right;">
+v2juhcind_VDEM
+</th>
+<th style="text-align:right;">
+v2juhccomp_VDEM
+</th>
+<th style="text-align:right;">
+v2excrptps_VDEM
+</th>
+<th style="text-align:right;">
+v2jucorrdc_VDEM
+</th>
+<th style="text-align:right;">
+v2exbribe_VDEM
+</th>
+<th style="text-align:right;">
+v2lgcrrpt_VDEM
+</th>
+<th style="text-align:right;">
+fragment_P4
+</th>
+<th style="text-align:right;">
+democ_P4
+</th>
+<th style="text-align:right;">
+autoc_P4
+</th>
+<th style="text-align:right;">
+polity_P4
+</th>
+<th style="text-align:right;">
+polity2_P4
+</th>
+<th style="text-align:right;">
+durable_P4
+</th>
+<th style="text-align:right;">
+xconst_P4
+</th>
+<th style="text-align:right;">
+parreg_P4
+</th>
+<th style="text-align:right;">
+parcomp_P4
+</th>
+<th style="text-align:right;">
+polcomp_P4
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Poland
+</td>
+<td style="text-align:right;">
+1919
+</td>
+<td style="text-align:right;">
+0.362
+</td>
+<td style="text-align:right;">
+0.700
+</td>
+<td style="text-align:right;">
+0.023
+</td>
+<td style="text-align:right;">
+0.321
+</td>
+<td style="text-align:right;">
+0.336
+</td>
+<td style="text-align:right;">
+0.814
+</td>
+<td style="text-align:right;">
+0.154
+</td>
+<td style="text-align:right;">
+0.296
+</td>
+<td style="text-align:right;">
+0.270
+</td>
+<td style="text-align:right;">
+0.694
+</td>
+<td style="text-align:right;">
+0.250
+</td>
+<td style="text-align:right;">
+0.565
+</td>
+<td style="text-align:right;">
+0.820
+</td>
+<td style="text-align:right;">
+0.859
+</td>
+<td style="text-align:right;">
+0.786
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.648
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.863
+</td>
+<td style="text-align:right;">
+0.891
+</td>
+<td style="text-align:right;">
+0.701
+</td>
+<td style="text-align:right;">
+0.583
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.274
+</td>
+<td style="text-align:right;">
+0.019
+</td>
+<td style="text-align:right;">
+0.591
+</td>
+<td style="text-align:right;">
+0.510
+</td>
+<td style="text-align:right;">
+0.819
+</td>
+<td style="text-align:right;">
+0.624
+</td>
+<td style="text-align:right;">
+0.623
+</td>
+<td style="text-align:right;">
+0.817
+</td>
+<td style="text-align:right;">
+0.505
+</td>
+<td style="text-align:right;">
+0.522
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.168
+</td>
+<td style="text-align:right;">
+0.193
+</td>
+<td style="text-align:right;">
+0.136
+</td>
+<td style="text-align:right;">
+0.678
+</td>
+<td style="text-align:right;">
+0.136
+</td>
+<td style="text-align:right;">
+0.841
+</td>
+<td style="text-align:right;">
+0.872
+</td>
+<td style="text-align:right;">
+0.858
+</td>
+<td style="text-align:right;">
+0.818
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.993
+</td>
+<td style="text-align:right;">
+1.381
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+<td style="text-align:right;">
+1.067
+</td>
+<td style="text-align:right;">
+2.478
+</td>
+<td style="text-align:right;">
+1.312
+</td>
+<td style="text-align:right;">
+0.465
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Poland
+</td>
+<td style="text-align:right;">
+1920
+</td>
+<td style="text-align:right;">
+0.641
+</td>
+<td style="text-align:right;">
+0.831
+</td>
+<td style="text-align:right;">
+0.450
+</td>
+<td style="text-align:right;">
+0.690
+</td>
+<td style="text-align:right;">
+0.526
+</td>
+<td style="text-align:right;">
+0.807
+</td>
+<td style="text-align:right;">
+0.258
+</td>
+<td style="text-align:right;">
+0.267
+</td>
+<td style="text-align:right;">
+0.469
+</td>
+<td style="text-align:right;">
+0.686
+</td>
+<td style="text-align:right;">
+0.411
+</td>
+<td style="text-align:right;">
+0.565
+</td>
+<td style="text-align:right;">
+0.832
+</td>
+<td style="text-align:right;">
+0.859
+</td>
+<td style="text-align:right;">
+0.786
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.608
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.864
+</td>
+<td style="text-align:right;">
+0.893
+</td>
+<td style="text-align:right;">
+0.701
+</td>
+<td style="text-align:right;">
+0.579
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.271
+</td>
+<td style="text-align:right;">
+0.019
+</td>
+<td style="text-align:right;">
+0.591
+</td>
+<td style="text-align:right;">
+0.510
+</td>
+<td style="text-align:right;">
+0.819
+</td>
+<td style="text-align:right;">
+0.614
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+0.817
+</td>
+<td style="text-align:right;">
+0.505
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.173
+</td>
+<td style="text-align:right;">
+0.203
+</td>
+<td style="text-align:right;">
+0.146
+</td>
+<td style="text-align:right;">
+0.678
+</td>
+<td style="text-align:right;">
+0.135
+</td>
+<td style="text-align:right;">
+0.839
+</td>
+<td style="text-align:right;">
+0.872
+</td>
+<td style="text-align:right;">
+0.867
+</td>
+<td style="text-align:right;">
+0.824
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.997
+</td>
+<td style="text-align:right;">
+1.381
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+<td style="text-align:right;">
+0.964
+</td>
+<td style="text-align:right;">
+2.478
+</td>
+<td style="text-align:right;">
+1.312
+</td>
+<td style="text-align:right;">
+0.465
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Poland
+</td>
+<td style="text-align:right;">
+1921
+</td>
+<td style="text-align:right;">
+0.640
+</td>
+<td style="text-align:right;">
+0.832
+</td>
+<td style="text-align:right;">
+0.449
+</td>
+<td style="text-align:right;">
+0.686
+</td>
+<td style="text-align:right;">
+0.512
+</td>
+<td style="text-align:right;">
+0.794
+</td>
+<td style="text-align:right;">
+0.261
+</td>
+<td style="text-align:right;">
+0.267
+</td>
+<td style="text-align:right;">
+0.482
+</td>
+<td style="text-align:right;">
+0.710
+</td>
+<td style="text-align:right;">
+0.430
+</td>
+<td style="text-align:right;">
+0.603
+</td>
+<td style="text-align:right;">
+0.801
+</td>
+<td style="text-align:right;">
+0.859
+</td>
+<td style="text-align:right;">
+0.786
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.608
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.864
+</td>
+<td style="text-align:right;">
+0.893
+</td>
+<td style="text-align:right;">
+0.690
+</td>
+<td style="text-align:right;">
+0.579
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.271
+</td>
+<td style="text-align:right;">
+0.019
+</td>
+<td style="text-align:right;">
+0.591
+</td>
+<td style="text-align:right;">
+0.571
+</td>
+<td style="text-align:right;">
+0.819
+</td>
+<td style="text-align:right;">
+0.614
+</td>
+<td style="text-align:right;">
+0.655
+</td>
+<td style="text-align:right;">
+0.857
+</td>
+<td style="text-align:right;">
+0.505
+</td>
+<td style="text-align:right;">
+0.563
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.195
+</td>
+<td style="text-align:right;">
+0.214
+</td>
+<td style="text-align:right;">
+0.146
+</td>
+<td style="text-align:right;">
+0.678
+</td>
+<td style="text-align:right;">
+0.135
+</td>
+<td style="text-align:right;">
+0.847
+</td>
+<td style="text-align:right;">
+0.872
+</td>
+<td style="text-align:right;">
+0.857
+</td>
+<td style="text-align:right;">
+0.830
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.997
+</td>
+<td style="text-align:right;">
+1.381
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+<td style="text-align:right;">
+0.964
+</td>
+<td style="text-align:right;">
+2.478
+</td>
+<td style="text-align:right;">
+1.312
+</td>
+<td style="text-align:right;">
+0.294
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Poland
+</td>
+<td style="text-align:right;">
+1922
+</td>
+<td style="text-align:right;">
+0.638
+</td>
+<td style="text-align:right;">
+0.830
+</td>
+<td style="text-align:right;">
+0.446
+</td>
+<td style="text-align:right;">
+0.685
+</td>
+<td style="text-align:right;">
+0.526
+</td>
+<td style="text-align:right;">
+0.811
+</td>
+<td style="text-align:right;">
+0.259
+</td>
+<td style="text-align:right;">
+0.267
+</td>
+<td style="text-align:right;">
+0.480
+</td>
+<td style="text-align:right;">
+0.710
+</td>
+<td style="text-align:right;">
+0.431
+</td>
+<td style="text-align:right;">
+0.620
+</td>
+<td style="text-align:right;">
+0.797
+</td>
+<td style="text-align:right;">
+0.859
+</td>
+<td style="text-align:right;">
+0.786
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.614
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.870
+</td>
+<td style="text-align:right;">
+0.893
+</td>
+<td style="text-align:right;">
+0.710
+</td>
+<td style="text-align:right;">
+0.579
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.271
+</td>
+<td style="text-align:right;">
+0.019
+</td>
+<td style="text-align:right;">
+0.591
+</td>
+<td style="text-align:right;">
+0.571
+</td>
+<td style="text-align:right;">
+0.819
+</td>
+<td style="text-align:right;">
+0.614
+</td>
+<td style="text-align:right;">
+0.642
+</td>
+<td style="text-align:right;">
+0.846
+</td>
+<td style="text-align:right;">
+0.505
+</td>
+<td style="text-align:right;">
+0.567
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.197
+</td>
+<td style="text-align:right;">
+0.214
+</td>
+<td style="text-align:right;">
+0.155
+</td>
+<td style="text-align:right;">
+0.678
+</td>
+<td style="text-align:right;">
+0.135
+</td>
+<td style="text-align:right;">
+0.853
+</td>
+<td style="text-align:right;">
+0.872
+</td>
+<td style="text-align:right;">
+0.857
+</td>
+<td style="text-align:right;">
+0.821
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.997
+</td>
+<td style="text-align:right;">
+1.381
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+<td style="text-align:right;">
+0.964
+</td>
+<td style="text-align:right;">
+2.478
+</td>
+<td style="text-align:right;">
+1.220
+</td>
+<td style="text-align:right;">
+0.294
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Poland
+</td>
+<td style="text-align:right;">
+1923
+</td>
+<td style="text-align:right;">
+0.629
+</td>
+<td style="text-align:right;">
+0.824
+</td>
+<td style="text-align:right;">
+0.435
+</td>
+<td style="text-align:right;">
+0.677
+</td>
+<td style="text-align:right;">
+0.515
+</td>
+<td style="text-align:right;">
+0.811
+</td>
+<td style="text-align:right;">
+0.249
+</td>
+<td style="text-align:right;">
+0.267
+</td>
+<td style="text-align:right;">
+0.464
+</td>
+<td style="text-align:right;">
+0.710
+</td>
+<td style="text-align:right;">
+0.411
+</td>
+<td style="text-align:right;">
+0.620
+</td>
+<td style="text-align:right;">
+0.782
+</td>
+<td style="text-align:right;">
+0.859
+</td>
+<td style="text-align:right;">
+0.786
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.675
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.870
+</td>
+<td style="text-align:right;">
+0.893
+</td>
+<td style="text-align:right;">
+0.710
+</td>
+<td style="text-align:right;">
+0.579
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.271
+</td>
+<td style="text-align:right;">
+0.019
+</td>
+<td style="text-align:right;">
+0.591
+</td>
+<td style="text-align:right;">
+0.571
+</td>
+<td style="text-align:right;">
+0.819
+</td>
+<td style="text-align:right;">
+0.614
+</td>
+<td style="text-align:right;">
+0.610
+</td>
+<td style="text-align:right;">
+0.846
+</td>
+<td style="text-align:right;">
+0.461
+</td>
+<td style="text-align:right;">
+0.567
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.197
+</td>
+<td style="text-align:right;">
+0.214
+</td>
+<td style="text-align:right;">
+0.155
+</td>
+<td style="text-align:right;">
+0.678
+</td>
+<td style="text-align:right;">
+0.135
+</td>
+<td style="text-align:right;">
+0.857
+</td>
+<td style="text-align:right;">
+0.872
+</td>
+<td style="text-align:right;">
+0.858
+</td>
+<td style="text-align:right;">
+0.821
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.997
+</td>
+<td style="text-align:right;">
+1.381
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+<td style="text-align:right;">
+0.964
+</td>
+<td style="text-align:right;">
+2.478
+</td>
+<td style="text-align:right;">
+1.220
+</td>
+<td style="text-align:right;">
+0.294
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Poland
+</td>
+<td style="text-align:right;">
+1924
+</td>
+<td style="text-align:right;">
+0.629
+</td>
+<td style="text-align:right;">
+0.824
+</td>
+<td style="text-align:right;">
+0.435
+</td>
+<td style="text-align:right;">
+0.677
+</td>
+<td style="text-align:right;">
+0.515
+</td>
+<td style="text-align:right;">
+0.811
+</td>
+<td style="text-align:right;">
+0.249
+</td>
+<td style="text-align:right;">
+0.267
+</td>
+<td style="text-align:right;">
+0.464
+</td>
+<td style="text-align:right;">
+0.710
+</td>
+<td style="text-align:right;">
+0.411
+</td>
+<td style="text-align:right;">
+0.620
+</td>
+<td style="text-align:right;">
+0.782
+</td>
+<td style="text-align:right;">
+0.859
+</td>
+<td style="text-align:right;">
+0.786
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.675
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.870
+</td>
+<td style="text-align:right;">
+0.893
+</td>
+<td style="text-align:right;">
+0.710
+</td>
+<td style="text-align:right;">
+0.579
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.271
+</td>
+<td style="text-align:right;">
+0.019
+</td>
+<td style="text-align:right;">
+0.591
+</td>
+<td style="text-align:right;">
+0.571
+</td>
+<td style="text-align:right;">
+0.819
+</td>
+<td style="text-align:right;">
+0.614
+</td>
+<td style="text-align:right;">
+0.610
+</td>
+<td style="text-align:right;">
+0.846
+</td>
+<td style="text-align:right;">
+0.461
+</td>
+<td style="text-align:right;">
+0.567
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.197
+</td>
+<td style="text-align:right;">
+0.214
+</td>
+<td style="text-align:right;">
+0.155
+</td>
+<td style="text-align:right;">
+0.678
+</td>
+<td style="text-align:right;">
+0.135
+</td>
+<td style="text-align:right;">
+0.857
+</td>
+<td style="text-align:right;">
+0.872
+</td>
+<td style="text-align:right;">
+0.858
+</td>
+<td style="text-align:right;">
+0.821
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1.997
+</td>
+<td style="text-align:right;">
+1.381
+</td>
+<td style="text-align:right;">
+1.5
+</td>
+<td style="text-align:right;">
+0.964
+</td>
+<td style="text-align:right;">
+2.478
+</td>
+<td style="text-align:right;">
+1.220
+</td>
+<td style="text-align:right;">
+0.294
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="exploratory-data-analysis" class="section level2">
+<h2>Exploratory data analysis</h2>
+<p>In every modeling process we should perform exploratory data analysis before moving to the next points.</p>
+<pre class="r"><code>dfSummary(pol_ds, plain.ascii = FALSE, style = &quot;grid&quot;, 
+          graph.magnif = 0.75, valid.col = FALSE, tmp.img.dir = &quot;/tmp&quot;)</code></pre>
+<pre><code>## temporary images written to &#39;E:\tmp&#39;</code></pre>
+<div id="data-frame-summary" class="section level3">
+<h3>Data Frame Summary</h3>
+<p><strong>pol_ds</strong><br />
+<strong>Dimensions:</strong> 89 x 70<br />
+<strong>Duplicates:</strong> 0</p>
+<table>
+<colgroup>
+<col width="4%"></col>
+<col width="23%"></col>
+<col width="24%"></col>
+<col width="18%"></col>
+<col width="20%"></col>
+<col width="8%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>No</th>
+<th>Variable</th>
+<th>Stats / Values</th>
+<th>Freqs (% of Valid)</th>
+<th>Graph</th>
+<th>Missing</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>country<br />
+[character]</td>
+<td>1. Poland</td>
+<td>89 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQr/ym3eAAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTArMDA6MDAWAMh6AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEwKzAwOjAwZ11wxgAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>year<br />
+[numeric]</td>
+<td>Mean (sd) : 1970.8 (29)<br />
+min &lt; med &lt; max:<br />
+1919 &lt; 1973 &lt; 2017<br />
+IQR (CV) : 44 (0)</td>
+<td>89 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAG5JREFUWMPt1sENgCAMheGugBuIG+D+uwnVFjFRE2Ligf8dmrzQ7whBZKyEnCmWhCN7u8lcNs50zUlOtZWx2KgNCoVeqN2pDmon0F+pPot9VBsUCoVCoVDoB1S/JL7cthfqJ6nZg0KhjzR2RMbKBlojlt32maFdAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwsHfDzgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMMEqe3IAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>v2x_polyarchy_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.4 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.2 &lt; 0.3 &lt; 0.9<br />
+IQR (CV) : 0.7 (0.7)</td>
+<td>54 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAG1JREFUWMPt2EEKgCAQhWGvUDdIb+Dc/26FE/RAgjQIyf8tZvH0W7gcQ5grUbI8zEmTHclW5njUn7T10HLPoFAoFAqFQqFQ6LB0lR2mlUoNhf6cymLcSuX0a6ofFRX1+o6ma+aKev2exo6EubIDPsvNS2LZ1iQAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDCwd8POAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwwSp7cgAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>v2x_api_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.6 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.3 &lt; 0.5 &lt; 1<br />
+IQR (CV) : 0.6 (0.4)</td>
+<td>53 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAHJJREFUWMPt11EKgCAMxvFdoW6Q3iDvf7egtgejYq562v97EWE/BKegIrlSNNNAlNa2Z4VCoY+xWxagVguFQqFQKNRHPW/bG+pZHPoB1R4tAXoMLTHVzYtQLYJCX9C5P4FDtHXmb2pfsACtl9MTLYFIrmzK69FlrooRrgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>v2x_mpi_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.3 (0.4)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0 &lt; 0.9<br />
+IQR (CV) : 0.8 (1.3)</td>
+<td>38 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAGBJREFUWMPt18EJwCAMQNGs0BFMN9D9d6sYQcEe2oin/H+UvJMIRiRW2rp+1eldahkKhUKhUCgUCoUepfZnd1GbhkKDUXszLtrmymG67OHf6XIM3aM6ShOdruiFqiOJ1QNifmDIjC8N9wAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>v2x_EDcomp_thick_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.2 &lt; 0.3 &lt; 0.9<br />
+IQR (CV) : 0.6 (0.5)</td>
+<td>55 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAGlJREFUWMPt1j0OgCAMQOFeAW9gvQHe/24mlaGdtCxK+t7Gz7dAQhCpVbM2tfb2qkhPCwqFQqFQKBS6JI0fwRwN6wXpfXQ6Qw+b69B/0HGTM3Rshn5Nw0uWpH4KujRVX476QX+kOpHU6gIZL5XGLPk8fQAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>v2x_libdem_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.4 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.2 &lt; 0.9<br />
+IQR (CV) : 0.6 (0.8)</td>
+<td>58 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAG1JREFUWMPt1sENgCAMheGuoBtYN4D9dzNKDzXhYEu8wP8OJA/4Eg6QILJWtGWLxOhZ7xQoFAqFQqHQWan9lDLUNkOhf9F2OY8MfcYKhc5Ed/8irHylfsoKdJSqT4z6Uobp6wgx2ls3qonIWrkAMPSVehaNiLgAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDCwd8POAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwwSp7cgAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>v2x_liberal_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.6 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.3 &lt; 0.6 &lt; 1<br />
+IQR (CV) : 0.5 (0.4)</td>
+<td>57 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAGxJREFUWMPt10EKwCAMRNFcoT1CvIHe/26FEheRUNpQu6h/diM+mJ0osla2B1FLgpZ2pr5Gd9uSoXYKhUKhUOg02t/MBO0VCoVCoTHV8Ctwi5ZwxMfU5meo1Wl0mObrNW3+kq9Q6M+oJiJr5QBKLvvFADx0zwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td>v2x_partipdem_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.3 (0.3)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0.1 &lt; 0.7<br />
+IQR (CV) : 0.5 (1)</td>
+<td>57 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAGhJREFUWMPt10EOwBAQQNG5Qo9g3KDuf7cmOrPQ0CAWbfy/EeLFxgKRvVLrGMhoTLkTCoVCoVAoFLqO+vNsgvpeKBTq057vToP2HA79LbWbEUpjq+/0HlKoHgf9BNWyERqr0wfViWSvLr/em0C7VPBXAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwsHfDzgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMMEqe3IAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td>v2x_partip_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.3 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.3 &lt; 0.7<br />
+IQR (CV) : 0.5 (0.8)</td>
+<td>39 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAGlJREFUWMPt17ENgDAMRFGvABsQNiD774YElyJ0OQRF/K+xIvlVsRI5IleKsgxEdK9XDigUOhdtz4JBWy80EV01L5tB71OFQqFQKHQ2qt/RoV2B/k11cw5V09f0scGP0H6yoW9oMRK5cgLZddpnCZbCywAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td>v2x_delibdem_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.3 (0.3)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0.2 &lt; 0.8<br />
+IQR (CV) : 0.6 (1)</td>
+<td>58 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAHtJREFUWMPt10EOwBAQhWFXaG/QcYO6/93aDAlJCSPdiP8tLIYvxMKEc3tFNIcpifrw5oZCoVAoFLoYjd3/mqG6LkChUKiZ9v8dTRq6e0Nr9HPl49RXC9AladHzrbSY/Yeeepg5quURKnmT9O4UNBZa1OexVU5UJuL2ygPiD4UwIIxCsAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td>v2xdl_delib_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.4 (0.3)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0.4 &lt; 0.9<br />
+IQR (CV) : 0.7 (0.7)</td>
+<td>42 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAHhJREFUWMPt18EJwCAMhWFXsBtUN6j771ZMDiq0RAOe/N8hoOQLXhQM4azEmitJ4mQGWmoeKBS6h+rldNEsfVAoFAqFQqEG/fkMzND8fYyB6nibat9AdWFT2ShQqJumllVaWjWojL9dVOpJtH8OFmnfs40mR8JZeQHbkLROll5QHgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td>v2x_egaldem_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.4 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.2 &lt; 0.2 &lt; 0.8<br />
+IQR (CV) : 0.5 (0.6)</td>
+<td>52 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAF9JREFUWMPt2LENwCAMBVGvkGwQ2CDefzek6FNAgYQLUviu9nNpIcxyVdS1kWj1rxcKhUKhUCgU+i/Vi+4JUA1BoVBoJnpPZ3OH+jgEPUv7H0aA9tmJaqGP+5e0BLJcNSXwfzzPDnb1AAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwsHfDzgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMMEqe3IAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td>v2x_egal_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.8 (0.1)<br />
+min &lt; med &lt; max:<br />
+0.6 &lt; 0.8 &lt; 0.9<br />
+IQR (CV) : 0.1 (0.1)</td>
+<td>28 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAG1JREFUWMPt1sENgCAMheGugBuIG+j+u5nUXhrbKEblwP9u8PIlHBpAZKyULFPVzEF1STcNFAqFQqHQr6h/p9uoOwIUCu1Jgy/3bXq+TaDQP+kxvDWlUW900b01pVEPhb5AbSqfUFv48W+KjJUdHiuZSA8GzwsAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDCwd8POAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwwSp7cgAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td>v2x_frassoc_thick_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.4)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.4 &lt; 0.9<br />
+IQR (CV) : 0.8 (0.8)</td>
+<td>52 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAHlJREFUWMPt19EJwCAMRdGsYDeo3aDuv1trCiU/Vg0IFe/7EJEcVERQkbUScqImtMbSI905oVAoFAqFQivUvDd6qamBQiemegd8VBvodHQr/rPqtDj/X6juzUd1ZBw1K+ulpqaJPie8u2juJegYqufio2/zSaMjslYudHKNfO/N4AAAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDCwd8POAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwwSp7cgAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td>v2x_freexp_altinf_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.4)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.6 &lt; 1<br />
+IQR (CV) : 0.8 (0.7)</td>
+<td>37 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAHBJREFUWMPt19EJwCAMRVFX6Ap2g2b/3Vq0kNBqqflSct9n9CBCIphSrOSSbSg33eXKAYVCoUFpfT9dtO6GQqFQKBS6EO38nP7Qz/IStF7eRUtBoC1qemqUii5ORl+DYqn2UYvK82xbVjQDzY6kWDkBSlCImhaiFDMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDCwd8POAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjExKzAwOjAwwSp7cgAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td>v2xme_altinf_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.4)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.5 &lt; 0.9<br />
+IQR (CV) : 0.8 (0.8)</td>
+<td>20 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATELiM1dSAAAAHVJREFUWMPt18ENgCAMhWFWkA2kG8D+uylgJAYOtsaD8r8DIdCPHjgQnJsrIWddVDmopD1QKBQKhb5DfXmibDRXRygUCoVCf0D96Mt2k6bBjpq2/mraaqDdldpoKXhKS385Z0FB5TrEjtYTTbQuf4MGQ9xc2QAqjHyqTD9N3wAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMSswMDowMLB3w84AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTErMDA6MDDBKntyAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td>v2x_suffr_VDEM<br />
+[numeric]</td>
+<td>1 distinct value</td>
+<td>1 : 89 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQwWqcjrAAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td>v2xel_frefair_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.2 &lt; 0.3 &lt; 1<br />
+IQR (CV) : 0.7 (0.6)</td>
+<td>51 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAHBJREFUWMPt10EKgCAQQNG5gt2g8QZ1/7uF46JkKmogCP1/IRg9EEkwkbFKpUmt9LCGrqUFCoV+Q+vhDNFs70GhUCgUCoVCX9F6/zqn/s+poXVyQd3jfqhtyhyiNkL7pHrIfSn3NO+jX8wPqAaSsdoA3wWcIRFBo/cAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td>v2x_elecoff_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.9 (0.3)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 1 &lt; 1<br />
+IQR (CV) : 0 (0.3)</td>
+<td>0.00 : 9 (10.1%)<br />
+0.83 : 4 ( 4.5%)<br />
+1.00 : 76 (85.4%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGwAAAA7BAMAAABsw3KxAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAFNJREFUSMdjYBjeQAkMBIkGUG3KxkBgNKptVNuQ10ZmDiBewwBqI8ljgkghSUIwjmob1TZ4tZGZA0jSM1DalEgEyOUk8cBoVNuotkGqjcwcMFwBACX4CgWqhm2KAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAwgZ/ZUwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMPDCYe8AAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>21</td>
+<td>v2xcl_rol_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.3 &lt; 0.8 &lt; 1<br />
+IQR (CV) : 0.5 (0.3)</td>
+<td>46 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAG9JREFUWMPt1sEJwCAMheGs0I5gN6j771ba5KDgwUQKQv53ffkOgmJEcuXwpGgi9KpvbigUujM99Y2H6GcqFOqldutCVAeg0CVqy02EWgWFpqL9ruCjXQWFQn+k7efmpO30PnR0oEk66tdpCURy5QExVNQaWRyT2AAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMIGf2VMAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDDwwmHvAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>22</td>
+<td>v2x_jucon_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.4 &lt; 0.7 &lt; 1<br />
+IQR (CV) : 0.4 (0.3)</td>
+<td>25 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAHlJREFUWMPt1mEKgCAMBeBdwW7QukHd/265gc2ITFaBsPd+6fQDURGJYiXlTCxJ3anplrOCfkf1LHx0kZmgoKCgoKCgoL/Q5o/xgbbWEJXqdvqotsekektmH5USKGg/LZfNQcsw6KDU3kc+5Ri7p9eelaz3nrIjFCs7G3GhcdummVwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>23</td>
+<td>v2xlg_legcon_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.3 &lt; 0.9<br />
+IQR (CV) : 0.7 (0.7)</td>
+<td>27 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAGJJREFUWMPt1zEOgCAMQNFeQW5gvQHc/27GtIMEjaEDg/1/LH0LC0EkV2ptMzk92lWFQqFQ6M+pPxUR6stQKBQKhUJX0jJ+83z0Td9GLT21G9wj1I6gS6nem6Pd9hPVQJKrE5crlTpcBWqnAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAwgZ/ZUwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMPDCYe8AAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>24</td>
+<td>v2x_cspart_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.4 &lt; 0.9<br />
+IQR (CV) : 0.7 (0.7)</td>
+<td>29 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAHxJREFUWMPt1l0KgCAQBGCvYDdIb5D3v1s1wbb61K5SkDMPi4gfCv5gCHMlnklIfBpNczmykQ6gahesVI0hJSUlJSUlJR1A8S/xUfSQ/p0u8nW9WquB1q1CStpLcQZ9VMpH9L4+Zpplah9tn3kDbca8T7F2H0Xpp8mRMFd2j7qy7XVV9REAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>25</td>
+<td>v2xdd_dd_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.1 (0.1)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0 &lt; 0.2<br />
+IQR (CV) : 0.1 (1.5)</td>
+<td>14 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAFdJREFUWMPt17ENgDAMBVGvkGwQs0HYf7fEFgJBgeK0vitc/TeARXKlViuhLnqcMygUCoVCoVAoFAqFQv+q/nhGqSO1dY9SH3Zoeqp3a7R+wHNeVDeSXA1br063lVNkfgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMIGf2VMAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDDwwmHvAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>26</td>
+<td>v2xel_locelec_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.4 (0.4)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0.3 &lt; 1<br />
+IQR (CV) : 0.9 (1)</td>
+<td>14 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAF9JREFUWMPt2LsJACEQRdFpwe1At4O1/978bTSB4ICieG8oHsxeoMhdhZJ3Q/30jTkoFAqFrqRPnW0bLbc/KBQKhc6gbZ5ttB5DoVDojlRtm/pA6FL1tNras2kwJHeVACcJc/2PT4P0AAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAwgZ/ZUwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMPDCYe8AAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>27</td>
+<td>v2xel_regelec_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.2 (0.3)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0.1 &lt; 0.9<br />
+IQR (CV) : 0.2 (1.4)</td>
+<td>19 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAFRJREFUWMPt2LsVABAMQNGswAbYQPbfzbdRKKRyeK9K4XZpQuSvYs8dNWnSWoZCoVAoFAqFQqEP0nEpmOh4DYVeSn3f7WCibVToy3TzSbLQaEj+qgDnc1g/Gg5LbgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMIGf2VMAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDDwwmHvAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>28</td>
+<td>v2xeg_eqprotec_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.1)<br />
+min &lt; med &lt; max:<br />
+0.6 &lt; 0.7 &lt; 0.9<br />
+IQR (CV) : 0.1 (0.2)</td>
+<td>12 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAGtJREFUWMPt1sENgCAMQNGugBtYN5D9dzOSHkgaqdYYD/x/hL5wgiAyV8W3aKtcNqD1bIdCoVAoFAqNqfo/x126+Tko9FNqX+Q1Q9tSfUHtrmSoDUOhUOjf1F6yDLX9kPZHPKT9XEw1kczVAcxzlJ8Z2t9iAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAwgZ/ZUwAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMPDCYe8AAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>29</td>
+<td>v2xeg_eqdr_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.8 (0.1)<br />
+min &lt; med &lt; max:<br />
+0.5 &lt; 0.9 &lt; 0.9<br />
+IQR (CV) : 0 (0.2)</td>
+<td>22 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAFVJREFUWMPt18EJACAIQFFXqBFqg9x/t0In0CCK/r8ZPDrYJZG/KqGalaJdVwMKhUKhUCgUCoU+Sqt/B1JU7QgKvZ76K09RQwo9Sn1fKerDxq2x5K8mnBNZrCz5UkcAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>30</td>
+<td>v2xcs_ccsi_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.4 &lt; 0.9<br />
+IQR (CV) : 0.7 (0.6)</td>
+<td>29 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAGlJREFUWMPt1MENgCAMQNGugBtYN5D9dzO0B5WDIT3Z9P8bTd+BhCBSqzba1GqLvWgfnVBoEupvPUQP24NCoZWofxkh6oe/Ur9YiNpeh0ITUH/ne4T6DhQKhX5TnVunz/E9gKahGkhqdQEcNth3V0uiqgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMiswMDowMIGf2VMAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDDwwmHvAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>31</td>
+<td>v2xps_party_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.8 (0.1)<br />
+min &lt; med &lt; max:<br />
+0.6 &lt; 0.7 &lt; 0.9<br />
+IQR (CV) : 0.2 (0.1)</td>
+<td>25 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAGFJREFUWMPt1rENwCAMBVGvQDbAbJDsv1sKmwIpSvEVmviuQch6FS4wq1VbOjzq7a1nekVQKBQKhUKhUOh2mt9WF+iI4Qn9Cc1VUGia7+jcS4HOK3Q3zTdS6HJAK1MXslrdlSeayejsW64AAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>32</td>
+<td>v2x_gender_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.1)<br />
+min &lt; med &lt; max:<br />
+0.5 &lt; 0.7 &lt; 1<br />
+IQR (CV) : 0.3 (0.2)</td>
+<td>49 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEMFqnI6wAAAIVJREFUWMPt1t0JgDAMBOCuUDcw3cDsv5skarCQgkb8o3dPyuVDbRVMqa/kKiTJfrQb5cilhZmnBpWOQUFBb6CNj/YIZf/SoKCgoKCgn6P2G3qe2hzov+kgL0GQSgP6ErWNC9CtA41RXXuKURt+itq9tmj1MKxnK62HHVr23TJwnVIgqa/M8Wu4wbHu5vYAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>1<br />
+(1.1%)</td>
+</tr>
+<tr class="odd">
+<td>33</td>
+<td>v2x_gencl_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.4 &lt; 0.8 &lt; 0.9<br />
+IQR (CV) : 0.3 (0.2)</td>
+<td>28 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAGpJREFUWMPt1sEJwDAIhWFXaEcwGzT771YoevBWJYVK/ncJEb9TEozIXjneRGMydMwntlzQrtQPv0C9CQqFQqFQaFd62kegQmdsgjanfhcq1KpQKPRrquGhpugI5h80jqAUjdt1VAuRvXIDxEgOXSpvw1gAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTIrMDA6MDCBn9lTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEyKzAwOjAw8MJh7wAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>34</td>
+<td>v2x_gencs_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.6 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.5 &lt; 0.5 &lt; 0.9<br />
+IQR (CV) : 0.4 (0.3)</td>
+<td>30 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAG5JREFUWMPt18EJgDAMRuGuUDcwbqD776b+FemlIS0IQt+7Nh85lqQ0V/nOVI5W0+242qFQKBQK/SvVHxemi8YfKhWnGoRCoVDoNLScUUO0zEChMeof7C71V39K7a2bNvd3U+1fh6heGtQGSnN1AqY2j3yWod0nAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwJ+jS5wAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMFa1alsAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>35</td>
+<td>v2x_genpp_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.8 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.5 &lt; 0.9 &lt; 1<br />
+IQR (CV) : 0.3 (0.2)</td>
+<td>28 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAHFJREFUWMPt1sENgCAMhWFW0A3EDXT/3TTvYtNLbRNNCP87EAJ8cCmE1ubK8jZdUTdL9/POAYVCoUNQ89oFVAstNTsGVA0UCg2oLtlWopqBQh1VSdXo00ChH1FTn1lqhoekq/t8Zag7Hwr9h/ZC2ly5AGYQwjxJYSAoAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwJ+jS5wAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMFa1alsAAAAASUVORK5CYII=" /></td>
+<td>1<br />
+(1.1%)</td>
+</tr>
+<tr class="even">
+<td>36</td>
+<td>v2x_elecreg_VDEM<br />
+[integer]</td>
+<td>1 distinct value</td>
+<td>1 : 89 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQ1hrvh9AAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>37</td>
+<td>v2xex_elecreg_VDEM<br />
+[integer]</td>
+<td>Min : 0<br />
+Mean : 0.3<br />
+Max : 1</td>
+<td>0 : 61 (68.5%)<br />
+1 : 28 (31.5%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFkAAAAqBAMAAAAqk+rzAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAADlJREFUOMtjYBi6QIkooABVrWxMDBhVPaqadqpJS7GCRAEBslRj2opPNYYvjUZVj6qmr2rSUuxQBAB8fcavSoyXAAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMCfo0ucAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDBWtWpbAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>38</td>
+<td>v2xlg_elecreg_VDEM<br />
+[integer]</td>
+<td>1 distinct value</td>
+<td>1 : 89 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQ1hrvh9AAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>39</td>
+<td>v2xel_elecparl_VDEM<br />
+[integer]</td>
+<td>Min : 0<br />
+Mean : 0.3<br />
+Max : 1</td>
+<td>0 : 65 (73.0%)<br />
+1 : 24 (27.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF4AAAAqBAMAAADIT/GKAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAADlJREFUOMtjYBj6QIlYAFWvbEwcMBpVP6p+ANSTmp4FiQVkqkezVZGQejT/jqofVT+o1JOanocyAADey8tVjwCX+wAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMCfo0ucAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDBWtWpbAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>40</td>
+<td>v2xlg_leginter_VDEM<br />
+[integer]</td>
+<td>1 distinct value</td>
+<td>0 : 89 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQ1hrvh9AAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>41</td>
+<td>v2xel_elecpres_VDEM<br />
+[integer]</td>
+<td>Min : 0<br />
+Mean : 0.1<br />
+Max : 1</td>
+<td>0 : 83 (93.3%)<br />
+1 : 6 ( 6.7%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHUAAAAqBAMAAAB/8gmtAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAD1JREFUSMdjYBh5QIkMoADVq2xMOhjVO6p3VC+qXkryoCAZQIAKekFuIFcvMKyMRvWO6h3VS5leSvLgSAIAbTjmSyHIdvkAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>42</td>
+<td>v2x_hosinter_VDEM<br />
+[integer]</td>
+<td>1 distinct value</td>
+<td>0 : 89 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQ1hrvh9AAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>43</td>
+<td>v2x_corr_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.2 (0)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.2 &lt; 0.2<br />
+IQR (CV) : 0.1 (0.3)</td>
+<td>31 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAGpJREFUWMPt18ENgCAMheGuoBtYN9D9dyMpvZhwKE0Mxv7vBo/vBk0QqZUtlF0tR1/N0dsChUKhK2gfXpqhpx24oNBvU7/jGeo9FAp9kfoTzVDfgkKhxan/xVP0UQXpaGwF6aj6K9VEpFYaPdS4zunJYrgAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>44</td>
+<td>v2x_pubcorr_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.2 (0.1)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.2 &lt; 0.4<br />
+IQR (CV) : 0.2 (0.3)</td>
+<td>23 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAGpJREFUWMPt1cEJwCAMheGs0G5Q3aDuv1sPNrmI2AhFW/93EpMPBDGKrJWg2Z7npjHlnFAodDDd6y+5SVP1PNBR1K7TT20DCoVC/0p1RB5+qgvoxNT+QD+1ChQK/S7VEdBBi4Y3aeiIrJULvfgViXejCssAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>45</td>
+<td>v2x_execorr_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.1 (0)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.2 &lt; 0.2<br />
+IQR (CV) : 0.1 (0.3)</td>
+<td>21 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAHNJREFUWMPt10sKwCAMRVG3YHdQu4O6/72V1gx8UPoJBFq8b2g8aEAHSWms5D6lJd/kjC51z/oVOrVOZg89ChX6iNqT8VCrQ6HQQGpf1ENtCQqFQqFQKBT6NyqTfU9tUL6gcpBQ2R1D5XbvqJTiaXEkjZUNoYTyQ2DAZCYAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>46</td>
+<td>v2x_divparctrl_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : -0.4 (1.1)<br />
+min &lt; med &lt; max:<br />
+-1.6 &lt; -0.3 &lt; 1.3<br />
+IQR (CV) : 2.2 (-2.6)</td>
+<td>23 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAGhJREFUWMPt1sEJwCAMQNGskG7QuEHdf7dCYw4WKRJ6aPH/iyA+1IOgyFqpt5mnM91ovTqgUCgUCoVCoVCo2vBnHbOPtAwPEbNTtG2zJ6gP9Xe0XTlDSzdAoe/TePkJ2i+CfopaIlmrExqAsJmydW6AAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwJ+jS5wAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMFa1alsAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>47</td>
+<td>v2x_feduni_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.3 (0.4)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 0.1 &lt; 0.9<br />
+IQR (CV) : 0.4 (1.1)</td>
+<td>19 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAGtJREFUWMPt2EEKgCAQQNG5Qt6g6QZ2/7uZU9DCRJyNwfy/kEAfFCSIIrHS2r5N9dDjvIJCoVAoFAqFfpXsmOWjdXVeT+0L1EVtyFAodBVN3e07pt2XgMaj94/ko/b0C/pee0xTm26pOpJYFcoHdHH0vMx7AAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwJ+jS5wAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMFa1alsAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>48</td>
+<td>v2x_civlib_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.3 &lt; 0.7 &lt; 1<br />
+IQR (CV) : 0.5 (0.4)</td>
+<td>54 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAGxJREFUWMPt1rERgCAMQNGsgCPEDWT/3TglBRzhVNSz4P+S5FU0EZmrUKa50MvmHl3j3talNodCoVAoFAqFQh/RJZ+kQ/QYxNdodT071OYerbYdak9QKPSUatFN6mxDf6TtJ16m7d6nVAeSuUr4mOAn30EE7QAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMCfo0ucAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDBWtWpbAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>49</td>
+<td>v2x_clphy_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.3 &lt; 0.8 &lt; 1<br />
+IQR (CV) : 0.4 (0.3)</td>
+<td>27 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATENYa74fQAAAHBJREFUWMPt18EJgDAMQNGsoBuYbmD33000OVRqD40Uhf5/C+SBUEpRZK6WntSK0JTPdujXdLUz3CL0WstQKBQKhQaoP0AhagMUCv0b9XsdorYwkvqvS5Nq+fV36lOTpocBCoW+p1rWR+u9oVQDyVwduC3Wi8/RLoMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDAn6NLnAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjEzKzAwOjAwVrVqWwAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>50</td>
+<td>v2x_clpol_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.5 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 0.6 &lt; 1<br />
+IQR (CV) : 0.8 (0.6)</td>
+<td>43 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHhJREFUWMPt1ksOgCAMBNBewSOIN7D3v5umXcBCknY0BmVmQQLJC3+CyFxZUikWiG56Zr9PfQgQ9QopKSkpKSkp6fdo9At0QTXYN+kItLPREdo5ZG9TnwFErUFJSWHa3J8sbZr/Rm1RVohaOQqtT0uaVvQYLUBkrhxH7741oRKxLwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxMyswMDowMCfo0ucAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTMrMDA6MDBWtWpbAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>51</td>
+<td>v2x_clpriv_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.3 &lt; 0.8 &lt; 0.9<br />
+IQR (CV) : 0.3 (0.3)</td>
+<td>37 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHRJREFUWMPt18sNgCAQRVFa0A5kOpD+ezP4WGjQqGMkJty3m4Gz4RNCCH1leJKoeKilnBmaM2odXVQToFCoWrpMLrq2EhQKhUKhr2l5jiYP1RAU+j9aH+vbtG61o+XL6qF2UEAb0d2+bYtramfzPqXRkdBXFjI22sEjHc5KAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAw4k/saQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxNCswMDowMJMSVNUAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>52</td>
+<td>v2elsrgel_VDEM<br />
+[integer]</td>
+<td>Mean (sd) : 2.1 (1.9)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 2 &lt; 5<br />
+IQR (CV) : 2 (0.9)</td>
+<td>0 : 30 (33.7%)<br />
+2 : 37 (41.6%)<br />
+5 : 22 (24.7%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADsAAAA7BAMAAAA3C++AAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAEVJREFUOMtjYBhYoIQJBIFAACqtbIwOjEalB1aaQIwJYgfUkVbCDhRwuhwMRqUHTppAjNExtWBIo7jcaFR6EEgTiLGBAgAharecOwFcMgAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxNCswMDowMOJP7GkAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDCTElTVAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>53</td>
+<td>v2elreggov_VDEM<br />
+[integer]</td>
+<td>1 distinct value</td>
+<td>1 : 89 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQ74p6nHAAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>54</td>
+<td>v2cltrnslw_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 1.1 (0.7)<br />
+min &lt; med &lt; max:<br />
+0.1 &lt; 1.2 &lt; 2.1<br />
+IQR (CV) : 1.1 (0.6)</td>
+<td>14 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHJJREFUWMPt1sENgCAMheGugBuIG+j+u4lNimn0AE04KP+7QflONAWRuZIsSy5ZU0se9CiBQqFQKPSu+Ueli/oaFAr9Fc02HPrpZltQ6GiqfdpEa0cbvcp7E60r6EiqNxSjehz6Wap/0SB1rfdOcyAyV05w/IIQzGRv1wAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxNCswMDowMOJP7GkAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDCTElTVAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>55</td>
+<td>v2juhcind_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.9 (1.1)<br />
+min &lt; med &lt; max:<br />
+-0.6 &lt; 0.8 &lt; 2.6<br />
+IQR (CV) : 2.6 (1.2)</td>
+<td>19 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHdJREFUWMPt1s0NgDAIBWBWqBtYN9D9dzNBDhDLAYzxh/dObel3KmkgqpXGmTpnbk5s3dKN41NTBwUFBQUFBQV9HZVJJ0V5vT5D9YAWpOcj0O/Q4+F7hi7ePdD/UN0fQao3oHWotEyGSv1+ar69GB3Vr9OeCNXKDleO6RVUW6xCAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAw4k/saQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxNCswMDowMJMSVNUAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>56</td>
+<td>v2juhccomp_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 1.3 (0.6)<br />
+min &lt; med &lt; max:<br />
+0.2 &lt; 1 &lt; 2.2<br />
+IQR (CV) : 1 (0.4)</td>
+<td>14 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHdJREFUWMPt10EKACEIBVCv0BwhbzBz/7vN6MIYKiF34v+70EcQUUhUK23K1SXNyZ4+X25QUFBQUFDQDFR//BhlqYGCgoKmofrgxahWQAP0P1ceUZ5XlamO6B7t1jBRER5la8hK7Z4t6DiYJbXKgo7m/a6HoVp5AfDzb3lkC4w9AAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAw4k/saQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxNCswMDowMJMSVNUAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>57</td>
+<td>v2excrptps_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.7 (0.3)<br />
+min &lt; med &lt; max:<br />
+0.2 &lt; 0.9 &lt; 1.3<br />
+IQR (CV) : 0.6 (0.5)</td>
+<td>18 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAH9JREFUWMPt10EOwBAQhWFX4AblBp37361MkKZEpNF04X87ni+xmM0Ys1dsjPMxdj53KiLnauq7/5miodtAoVAoFAqFQqFQKPRJdfUa02Y5y1TLMW1a6BKqC3xt0+GYpvFSapsOX9HyLZdHrKU6fD0a8gNXXjdUL36l/kXMXrkAID15VdJMzDcAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>58</td>
+<td>v2jucorrdc_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 1.9 (0.5)<br />
+min &lt; med &lt; max:<br />
+1.3 &lt; 2.2 &lt; 2.5<br />
+IQR (CV) : 1.1 (0.3)</td>
+<td>9 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAACmBAMAAAB0L/FkAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAIZJREFUWMPt19EJwCAMBFBXuBG0G7T779Yfiy1NSCGKkd79vp/IhYApzU3JEFN5I0djozFgIBcl1+SHmJ08jY3GuqxDVriORl6GjUKh5OO2kH/FcLGyic9FJq/DRqFQwttCfjNcHPhh5AEMF4tXC/ezR47FRmNQ0mtbWsTJ2x+NHIGNxmblBHHrY/huhA2xAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAw4k/saQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxNCswMDowMJMSVNUAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>59</td>
+<td>v2exbribe_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 1.4 (0.4)<br />
+min &lt; med &lt; max:<br />
+0.9 &lt; 1.3 &lt; 2.3<br />
+IQR (CV) : 0.8 (0.3)</td>
+<td>18 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHNJREFUWMPt1sENgCAMheGugCPgBrL/bkbpARIQqRcb/ndr4Et6aAoiayWUiTlhkBbd05UDCvVHtzz3JnqbBPVFW5vuJW01AoVCoVDvVB8GC9UjKBRa3Hv4XQ9ptxHoL6muTwvVYo5WozVHq+I7jYbIWjkBmYnQf/C0jjEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>60</td>
+<td>v2lgcrrpt_VDEM<br />
+[numeric]</td>
+<td>Mean (sd) : 0.8 (0.2)<br />
+min &lt; med &lt; max:<br />
+0.2 &lt; 0.8 &lt; 1.4<br />
+IQR (CV) : 0.2 (0.3)</td>
+<td>13 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHJJREFUWMPt180NwCAIhmFWaDeobtDuv1sPhAOmaQSOvN/NnycSY4yK9Mrxl3NoLt+9RR8NFAqFQqFQaIUur5EInX5xKBTaly4fmxD19xi0MbVjlKE6eNfp8EVE6PxsFqjVkqDWW6d+Q0LUT0qtGon0ygsJwZrYmfTRiQAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxNCswMDowMOJP7GkAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDCTElTVAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>61</td>
+<td>fragment_P4<br />
+[numeric]</td>
+<td>1 distinct value</td>
+<td>0 : 18 (100.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAAZCAQAAABZLoLcAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQflAQoBMQ74p6nHAAAAZUlEQVRYw+3YsQ2AIBBA0TvjdG7ghG7AetKiCY2JEvn/ddcQfgIF5BlMy+gNGG74N9Z2OCa/8Ht2wiO20Xt7UblM2KNuOI3hNIbTGE5jOI3hNNjw27O0PFvlh3Lyv4cu7FE3nKYCjV4F6zd6pdwAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>71<br />
+(79.8%)</td>
+</tr>
+<tr class="even">
+<td>62</td>
+<td>democ_P4<br />
+[numeric]</td>
+<td>Mean (sd) : 3.8 (4.4)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 2 &lt; 10<br />
+IQR (CV) : 9 (1.1)</td>
+<td>0 : 44 (49.4%)<br />
+2 : 9 (10.1%)<br />
+5 : 2 ( 2.2%)<br />
+8 : 11 (12.4%)<br />
+9 : 7 ( 7.9%)<br />
+10 : 16 (18.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABwBAMAAABV1ss6AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAHxJREFUSMft1NEJwCAMBFBXyAg2G9j9dyu0+SnoeYF+aJr7foiQS0pZKweIET2HaUm2IcSkBYQnz5OQ3N9tSeITogwC4mhdnRJN8hNClEHkC2L3swJipzlJeEKUQUCcrcNEx5c5SShClEFA3Leu2/D3knT3JMk2hJj0KrkATxcrmfmGEokAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>63</td>
+<td>autoc_P4<br />
+[numeric]</td>
+<td>Mean (sd) : 3.9 (3.3)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 5 &lt; 8<br />
+IQR (CV) : 7 (0.8)</td>
+<td>0 : 36 (40.4%)<br />
+5 : 9 (10.1%)<br />
+6 : 7 ( 7.9%)<br />
+7 : 35 (39.3%)<br />
+8 : 2 ( 2.2%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADoAAABfBAMAAABLrMnyAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAGRJREFUSMdjYBg4oIQdQGWVjbEBo1HZQSSLPwYFsQOiZCEG4ZIFu8poVHZgZfHHEf74pUQWu7XIbjYalR1gWfxxJIgdUK3cQAeKeEuzUVn6yuKPI4piXxGfrPKo7KCXxR+DAwEAHujvps15gL4AAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>64</td>
+<td>polity_P4<br />
+[numeric]</td>
+<td>Mean (sd) : -0.1 (7.6)<br />
+min &lt; med &lt; max:<br />
+-8 &lt; -3 &lt; 10<br />
+IQR (CV) : 16 (-75.3)</td>
+<td>-8 : 2 ( 2.2%)<br />
+-7 : 35 (39.3%)<br />
+-6 : 7 ( 7.9%)<br />
+-3 : 9 (10.1%)<br />
+5 : 2 ( 2.2%)<br />
+8 : 11 (12.4%)<br />
+9 : 7 ( 7.9%)<br />
+10 : 16 (18.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADkAAACVBAMAAAAQ6E8jAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAIhJREFUWMPt1jESgCAQA0Ce4P1A8Af4/79pgQ0eGZFRUiTtNjeTG7gQ5iVFc7IU3aT0ihs0e6/JzXpNtXuRMilucHg32ht7zpCl1IobNDc97waa6j6W9F/FHY20j1X3Br9+flFEX8tfJiVW3ODwbjSV8w+VPm/Q3HS9G9XiVRtbLa2USXGDM3IA+ahFZaQaroMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>65</td>
+<td>polity2_P4<br />
+[numeric]</td>
+<td>Mean (sd) : -0.1 (7.6)<br />
+min &lt; med &lt; max:<br />
+-8 &lt; -3 &lt; 10<br />
+IQR (CV) : 16 (-75.3)</td>
+<td>-8 : 2 ( 2.2%)<br />
+-7 : 35 (39.3%)<br />
+-6 : 7 ( 7.9%)<br />
+-3 : 9 (10.1%)<br />
+5 : 2 ( 2.2%)<br />
+8 : 11 (12.4%)<br />
+9 : 7 ( 7.9%)<br />
+10 : 16 (18.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADkAAACVBAMAAAAQ6E8jAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEO+KepxwAAAIhJREFUWMPt1jESgCAQA0Ce4P1A8Af4/79pgQ0eGZFRUiTtNjeTG7gQ5iVFc7IU3aT0ihs0e6/JzXpNtXuRMilucHg32ht7zpCl1IobNDc97waa6j6W9F/FHY20j1X3Br9+flFEX8tfJiVW3ODwbjSV8w+VPm/Q3HS9G9XiVRtbLa2USXGDM3IA+ahFZaQaroMAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMTBUMDE6NDk6MTQrMDA6MDDiT+xpAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTEwVDAxOjQ5OjE0KzAwOjAwkxJU1QAAAABJRU5ErkJggg==" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>66</td>
+<td>durable_P4<br />
+[numeric]</td>
+<td>Mean (sd) : 14.4 (11.6)<br />
+min &lt; med &lt; max:<br />
+0 &lt; 12 &lt; 41<br />
+IQR (CV) : 19 (0.8)</td>
+<td>42 distinct values</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHQAAABUBAMAAAChGA4iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEPj6CZUQAAAGxJREFUWMPt1cEJwCAMQNGs0BEaN9D9d2vRQq0gGBt6qP8fPAQeXgyKrJXmNlMXDeksQqFQKBQK9ae2D/pBk+luKPSHVNvGaT7DfUYo1I92nuMI7WzFJ7Rapd1IqzEU6kfLc5yiZfye6kSyVgcJxb54We4qgAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxNSswMDowMEQ4590AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTUrMDA6MDA1ZV9hAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>67</td>
+<td>xconst_P4<br />
+[numeric]</td>
+<td>Mean (sd) : 4.7 (1.9)<br />
+min &lt; med &lt; max:<br />
+2 &lt; 4 &lt; 7<br />
+IQR (CV) : 4 (0.4)</td>
+<td>2 : 2 ( 2.2%)<br />
+3 : 42 (47.2%)<br />
+4 : 2 ( 2.2%)<br />
+5 : 9 (10.1%)<br />
+6 : 4 ( 4.5%)<br />
+7 : 30 (33.7%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEEAAABwBAMAAACz/wB+AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEPj6CZUQAAAHRJREFUSMftlMENgDAMAzsC2aC0G7T774aQ4AElWBUIksr3voclOwnBDmkWhWkzMg2nBu5W5LmRVOKetGrQ8G7g9l/ZmJGLovGH8eUfu026Dr/QGNHA7YtK18aAka9j0hjAwO2LSu8fO9AkPVNouDBwtxZYANCfJK/RHdwdAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjE1KzAwOjAwRDjn3QAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxNSswMDowMDVlX2EAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>68</td>
+<td>parreg_P4<br />
+[numeric]</td>
+<td>Mean (sd) : 3.7 (1)<br />
+min &lt; med &lt; max:<br />
+2 &lt; 4 &lt; 5<br />
+IQR (CV) : 0 (0.3)</td>
+<td>2 : 20 (22.5%)<br />
+4 : 53 (59.6%)<br />
+5 : 16 (18.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE8AAAA7BAMAAADIqcpiAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEPj6CZUQAAAEdJREFUSMdjYBgaQAkZCGIBAlCFysYIYDSqcFQhSalHkBCgnUIlQkABi6+xglGFI08h0alnUKRwRfwKEb4eVTiqkNTUM9gBAHOu2ne2iEeiAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTEwVDAxOjQ5OjE1KzAwOjAwRDjn3QAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0xMFQwMTo0OToxNSswMDowMDVlX2EAAAAASUVORK5CYII=" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="odd">
+<td>69</td>
+<td>parcomp_P4<br />
+[numeric]</td>
+<td>Mean (sd) : 2.5 (1.6)<br />
+min &lt; med &lt; max:<br />
+1 &lt; 2 &lt; 5<br />
+IQR (CV) : 3 (0.6)</td>
+<td>1 : 37 (41.6%)<br />
+2 : 16 (18.0%)<br />
+3 : 7 ( 7.9%)<br />
+4 : 13 (14.6%)<br />
+5 : 16 (18.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADsAAABfBAMAAACkbqLMAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEPj6CZUQAAAGNJREFUSMdjYBhYoIQdKECllY2xglHpQStNIEIFsQMB4qQR5ilik0Y4bVR6kEgTiDHKkgMxqQW3NMjlRqPSg0maQIwJYgdUTC3o6RQznY9KDxppAjFGneQwWtUME2kCETpQAAA5mvZ3D+6e6AAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxNSswMDowMEQ4590AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTUrMDA6MDA1ZV9hAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+<tr class="even">
+<td>70</td>
+<td>polcomp_P4<br />
+[numeric]</td>
+<td>Mean (sd) : 4.4 (3.9)<br />
+min &lt; med &lt; max:<br />
+1 &lt; 2 &lt; 10<br />
+IQR (CV) : 8 (0.9)</td>
+<td>1 : 37 (41.6%)<br />
+2 : 16 (18.0%)<br />
+7 : 7 ( 7.9%)<br />
+9 : 13 (14.6%)<br />
+10 : 16 (18.0%)</td>
+<td><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADsAAABfBAMAAACkbqLMAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAD1BMVEX////9/v2mpqbw8PD///+xh0SBAAAAAnRSTlMAAHaTzTgAAAABYktHRACIBR1IAAAAB3RJTUUH5QEKATEPj6CZUQAAAGNJREFUSMdjYBhYoIQdKECllY2xglHpQStNIEIFsQMB4qQR5ilik0Y4bVR6kEgTiDHKkgMxqQW3NMjlRqPSg0maQIwJYgdUTC3o6RQznY9KDxppAjFGneQwWtUME2kCETpQAAA5mvZ3D+6e6AAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0xMFQwMTo0OToxNSswMDowMEQ4590AAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMTBUMDE6NDk6MTUrMDA6MDA1ZV9hAAAAAElFTkSuQmCC" /></td>
+<td>0<br />
+(0.0%)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="clustering" class="section level2">
+<h2>Clustering</h2>
+<p>Clustering is an unsupervised machine learning task that is intended to analyze hidden patterns or natural groupings within data.</p>
+</div>
+<div id="test-for-clusterability-of-data" class="section level1">
+<h1>Test for clusterability of data</h1>
 </div>
 
 
