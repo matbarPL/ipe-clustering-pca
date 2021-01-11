@@ -10,7 +10,8 @@ bibliography: bibliography.bibtex
 knitr::opts_chunk$set(echo = TRUE,
                       results = 'asis')
 pacman::p_load(tidyverse, kableExtra, tidyverse, cluster, factoextra, dendextend,
-               summarytools, stats)
+               summarytools, stats, flexclust, fpc, clustertend, ClusterR)
+
 st_options(plain.ascii = FALSE,        # Always use this option in Rmd documents
            style        = "rmarkdown", # Always use this option in Rmd documents
            footnote     = NA,          # Makes html-rendered results more concise
@@ -158,12 +159,91 @@ as square root of (n/2) where n is denoted as optimal number of clusters.
 ```{r}
 sqrt((pol_ds_scaled %>% nrow()) / 2)
 ```
+Nowe we are coming back to elbow method in order to investigate optimal 
+number of clusters.
 
-In the community of unsupervised learning elbow method is very widely used. 
-Due to that this way is discussed as well.
+```{r}
+opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, plot_clusters = TRUE)
+```
+
+Elbow method and showed within-group heterogeneity shows that 6 clusters is
+appropriate number of clusters.
+
+```{r}
+opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, 'euclidean', 
+                               plot_clusters = TRUE, criterion = 'silhouette')
+```
+
+The other method uses silhouette index to find optimal number of clusters which 
+shows the maximum value for 2 clusters and lowest for 6.
+
+## K-means
+
+Kmeans is probably the most widely used algorithm for unsupervised learning.
+In the algorithm we shall specify number of clusters. A goal is pretty 
+straightforward, to minimize the differences within cluster and maximize 
+the differences between clusters. The way algorithm works is as follows, each of
+the points is assigned to the cluster, then it updates the assignments by adjusting 
+cluster boundaries according to the examples that currently fall into the cluster.
+Points are assigned to the clusters based on chosen distance metric. Then 
+centers are recalculated. The process lasts until no further improvements can 
+be made in the process.
 
 ```{r}
 pol_clusters <- kmeans(pol_ds_scaled %>% as.matrix(), 6)
-pol_clusters$cluster <- pol_clusters$cluster
+pol_ds_scaled$cluster <- pol_clusters$cluster
 ```
+
+After assigning we can easily show counts per cluster. 
+
+```{r}
+pol_ds_scaled %>% group_by(cluster) %>% count()
+```
+
+One of the metric for kmeans clustering can be checking what is the ratio 
+between cluster sum of squares and total sum of squares:
+
+```{r}
+(pol_clusters$betweenss /pol_clusters$totss)*100
+```
+
+The 87.46361 is the total variance in the data that is explained by the clustering.
+Thanks to clustering the algorithm is able to reduce sum of squares to 87.4631%.
+
+```{r}
+sil <- silhouette(x = pol_ds_scaled$cluster, dist(pol_ds_scaled))
+fviz_silhouette(sil)
+```
+
+## Hierarchical clustering
+
+Main advantage of hierarchical clustering over k-means is that there is no need
+to implicitly specify number of clusters. The algorithm itself proceeds iteratively,
+until there is just a single cluster. The algorithm is very often visualized
+via dendogram which is a tree structure. Two main types of hierarchial 
+clustering are widely discussed which are agglomerative [bottom up] 
+and divisive [top down]. 
+
+```{r}
+hc3 <- agnes(pol_ds_scaled, method = "ward")
+pltree(hc3, cex = 0.6, hang = -1, main = "dendrogram - agnes") 
+hc4 <- diana(pol_ds_scaled)
+pltree(hc4, cex = 0.6, hang = -1, main = "dendrogram - diana") 
+```
+
+In order to perform hierarchical clustering euclidean distance is calculated first
+then we cut the dendogram tree at k = 6. The chosen method is Ward's method 
+which is usually fine by default. 
+
+```{r}
+d_pol_ds <- dist(pol_ds_scaled, method = "euclidean")
+hc5 <- hclust(d_pol_ds, method = "ward.D2" )
+sub_grp <- cutree(hc5, k = 6)
+
+pol_ds_scaled %>%
+  mutate(cluster = sub_grp) %>%
+  group_by(cluster) %>% 
+  count()
+```
+
 
