@@ -10,7 +10,7 @@ bibliography: bibliography.bibtex
 knitr::opts_chunk$set(echo = TRUE,
                       results = 'asis')
 pacman::p_load(tidyverse, kableExtra, tidyverse, cluster, factoextra, dendextend,
-               summarytools, stats, flexclust, fpc, clustertend, ClusterR)
+               summarytools, stats, flexclust, fpc, clustertend, ClusterR, clValid)
 
 st_options(plain.ascii = FALSE,        # Always use this option in Rmd documents
            style        = "rmarkdown", # Always use this option in Rmd documents
@@ -24,7 +24,7 @@ Clustering in an unsupervised learning technique that uses machine learning
 algorithms to assign similar data to groups. Mostly it is used for knowledge 
 discovery of hidden patterns found within data. The main idea is to cluster 
 similar observations that they are grouped together. The more diverse groups
-the better.
+the better. In an ideal world, the results obtained from clustering should not only have good statistical properties (compact, well-separated, connected and stable), but also yield output that is relevant in terms of processed data.
 
 ## Dataset
 
@@ -151,7 +151,8 @@ map_dbl(m, ac)
 
 Other methods also yield very good results. 
 
-## Optimal numebr of clusters
+## Optimal number of clusters
+
 In order to keep high heterogeneity between the clusters and low inside them 
 appropriate number of clusters should be chosen. Very simple method is defined 
 as square root of (n/2) where n is denoted as optimal number of clusters.
@@ -159,7 +160,7 @@ as square root of (n/2) where n is denoted as optimal number of clusters.
 ```{r}
 sqrt((pol_ds_scaled %>% nrow()) / 2)
 ```
-Nowe we are coming back to elbow method in order to investigate optimal 
+Now we are coming back to elbow method in order to investigate optimal 
 number of clusters.
 
 ```{r}
@@ -170,16 +171,42 @@ Elbow method and showed within-group heterogeneity shows that 6 clusters is
 appropriate number of clusters.
 
 ```{r}
-opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, 'euclidean', 
-                               plot_clusters = TRUE, criterion = 'silhouette')
+opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, 'euclidean', plot_clusters = TRUE, criterion = 'silhouette')
 ```
 
 The other method uses silhouette index to find optimal number of clusters which 
-shows the maximum value for 2 clusters and lowest for 6.
+shows the maximum value for 2 clusters and lowest for 6. Measure method takes 
+into account what is the difference between points that belong to the same 
+cluster and what is the difference between different clusters. 
+
+Methods presented above are not very formalized due to their graphical way of presenting results. One way to address this drawback is a statistical procedure called 'gap' statistics. The concept is based on the graph of log(W_k) by making comparison with its expectation under an appropriate null reference distribution of the data. For latter one appropriate reference distribution need to be found in the data. Then the estimation of the optimal number of clusters is the value of k for which log(W_k) falls the farthest below this reference curve. One of the assumption of this algorithm is to have data that can be separated well.
+
+```{r}
+clusGap(pol_ds_scaled, FUN = kmeans, nstart = 20, K.max = 20, B = 60)
+
+```
+
+Number of clusters proposed by this sophisticated method is equal to 13. Mainly due to its advanced methodology this number has been chosen in further analysis.
+
+```{r}
+chosen_size <- 13
+```
+
+# Typical clustering algorithms based on partition
+
+Clustering based on partition assumes that cluster center is to regard the 
+center of data points. Main pros of these kind of algorithms are their time complexity,
+and their ability to compute results very well in general. In terms of drawbacks 
+we can list following points: these algorithms do not work well with convex data,
+they are sort of sensitive to the outliers, they can be stuck in the local 
+optimal, what is more we must specify the number of clusters before the process
+which is essentially very sensitive to the number of clusters.
 
 ## K-means
 
-Kmeans is probably the most widely used algorithm for unsupervised learning.
+### Definition of K-means
+
+K-means is probably the most widely used algorithm for unsupervised learning.
 In the algorithm we shall specify number of clusters. A goal is pretty 
 straightforward, to minimize the differences within cluster and maximize 
 the differences between clusters. The way algorithm works is as follows, each of
@@ -187,21 +214,25 @@ the points is assigned to the cluster, then it updates the assignments by adjust
 cluster boundaries according to the examples that currently fall into the cluster.
 Points are assigned to the clusters based on chosen distance metric. Then 
 centers are recalculated. The process lasts until no further improvements can 
-be made in the process.
+be made in the process. Improvement to this algorithm is K-medoids which also
+deal with discrete data points, as the representative of the corresponding cluster.
+
+### Clustering
 
 ```{r}
-pol_clusters <- kmeans(pol_ds_scaled %>% as.matrix(), 6)
-pol_ds_scaled$cluster <- pol_clusters$cluster
+pol_clusters <- kmeans(pol_ds_scaled %>% as.matrix(), chosen_size)
+pol_ds$cluster_kmeans <- pol_clusters$cluster
 ```
 
 After assigning we can easily show counts per cluster. 
 
 ```{r}
-pol_ds_scaled %>% group_by(cluster) %>% count()
+pol_ds %>% group_by(cluster_kmeans) %>% count()
 ```
 
-One of the metric for kmeans clustering can be checking what is the ratio 
-between cluster sum of squares and total sum of squares:
+### Evaluation indicators
+
+One of the metric for k-means clustering can be checking what is the ratio between cluster sum of squares and total sum of squares:
 
 ```{r}
 (pol_clusters$betweenss /pol_clusters$totss)*100
@@ -211,24 +242,110 @@ The 87.46361 is the total variance in the data that is explained by the clusteri
 Thanks to clustering the algorithm is able to reduce sum of squares to 87.4631%.
 
 ```{r}
-sil <- silhouette(x = pol_ds_scaled$cluster, dist(pol_ds_scaled))
+sil <- silhouette(x = pol_ds$cluster_kmeans, dist(pol_ds_scaled))
 fviz_silhouette(sil)
 ```
 
-## Hierarchical clustering
+Having discussed mostly known methods other types of cluster validation can be discussed as well such as "internal" "stability" from clValid package. For internal measures selected measures are defined the compactness, connectedness,
+and separation of the cluster partitions. Connectedness is evaluated depending on the number of the nearest points that are assigned to the same cluster. Compactness relates to inner cluster homogeneity, very often being measured by looking at the intra-cluster variance. Distance between cluster centroids is often being measured when separation evaluation is presented. The non-linear combination of the compactness and separation is described by the Dunn index and silhouette width. Stability is evaluated in terms of consistency of a clustering by comparing it with the clusters obtained after each column is removed, one at a time. 
+
+## PAM
+
+### Definition of PAM
+
+PAM focuses on object that are centrally located in a cluster. The procedure chooses set of medoids and iteratively replace one of the medoids with one of the non-medoids and check if it improves the total distance of the resulting clustering. The algorithm stops when there is no further change.
+
+### Clustering
+
+```{r}
+c1<-pam(pol_ds_scaled, chosen_size)
+pol_ds$cluster_pam <- c1$clustering
+```
+
+After assigning we can easily show counts per cluster. 
+
+```{r}
+pol_ds %>% group_by(cluster_pam) %>% count()
+```
+
+### Evaluation indicators
+
+## CLARA
+
+### Definition of CLARA
+
+CLARA draws multiple samples of the dataset and then applies PAM on each sample. Therefore the main weakness of the PAM procedure is omitted.
+
+### Clustering
+
+```{r}
+clara_flex <- eclust(pol_ds_scaled %>% as.matrix(), "clara", k=chosen_size) 
+pol_ds$cluster_clara <- clara_flex$clustering
+```
+
+After assigning we can easily show counts per cluster. 
+
+```{r}
+pol_ds %>% group_by(cluster_clara) %>% count()
+```
+
+### Evaluation indicators
+
+```{r}
+fviz_cluster(clara_flex, geom="point", ellipse.type="norm") 
+```
+
+# Hierarchical clustering
 
 Main advantage of hierarchical clustering over k-means is that there is no need
 to implicitly specify number of clusters. The algorithm itself proceeds iteratively,
 until there is just a single cluster. The algorithm is very often visualized
-via dendogram which is a tree structure. Two main types of hierarchial 
+via dendogram which is a tree structure. Two main types of hierarchical 
 clustering are widely discussed which are agglomerative [bottom up] 
-and divisive [top down]. 
+and divisive [top down]. These algorithms work well with arbitrary shape and 
+types. The algorithms are often able to detect hierarchical relationships which 
+can be useful in many disciplines such as biology or economics. Unfortunately,
+these types of algorithms do not work efficiently with large data sets.
+
+## Agglomerative Nesting
 
 ```{r}
 hc3 <- agnes(pol_ds_scaled, method = "ward")
-pltree(hc3, cex = 0.6, hang = -1, main = "dendrogram - agnes") 
+pltree(hc3, cex = 0.6, hang = -1, main = "dendrogram - agnes")
+```
+
+In order to perform hierarchical clustering euclidean distance is calculated first
+then we cut the dendogram tree at k = 6. The chosen method is Ward's method 
+which is usually fine by default.
+
+```{r}
+d_pol_ds <- dist(pol_ds_scaled, method = "euclidean")
+hc5 <- hclust(d_pol_ds, method = "ward.D2" )
+sub_grp <- cutree(hc5, k = 6)
+
+pol_ds_scaled <- 
+  pol_ds_scaled %>%
+  mutate(cluster_hier = sub_grp) 
+
+pol_ds_scaled %>%
+  group_by(cluster_hier) %>% 
+  count()
+```
+
+
+```{r}
+fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds_scaled$cluster_hier))
+```
+
+### Evaluation indicators
+
+# Some of other clustering methods
+
+## Divisive clustering
+
+```{r}
 hc4 <- diana(pol_ds_scaled)
-pltree(hc4, cex = 0.6, hang = -1, main = "dendrogram - diana") 
+pltree(hc4, cex = 0.6, hang = -1, main = "dendrogram - diana")
 ```
 
 In order to perform hierarchical clustering euclidean distance is calculated first
@@ -240,10 +357,45 @@ d_pol_ds <- dist(pol_ds_scaled, method = "euclidean")
 hc5 <- hclust(d_pol_ds, method = "ward.D2" )
 sub_grp <- cutree(hc5, k = 6)
 
+pol_ds_scaled <- 
+  pol_ds_scaled %>%
+  mutate(cluster_hier = sub_grp) 
+
 pol_ds_scaled %>%
-  mutate(cluster = sub_grp) %>%
-  group_by(cluster) %>% 
+  group_by(cluster_hier) %>% 
   count()
 ```
 
+
+```{r}
+fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds_scaled$cluster_hier))
+```
+
+### Evaluation indicators
+
+```{r}
+intern <- clValid(pol_ds_scaled %>% as.matrix(), chosen_size, clMethods = c("hierarchical",
++ "kmeans", "diana", "fanny", "som", "pam", "sota", "clara",
++ "model"), validation = "internal")
+```
+
+# Some of other clustering methods
+
+## Gaussian mixture models
+
+The main  idea that is hidden in this algorithm is that points belong to several
+Gaussian distributions. The main advantages is that there is a proper mathematical
+theory developed inside which can lead to very realistic probability of belonging.
+Considering drawbacks we cannot ommit is that many parameters need to be specified
+for these algorithms.
+
+## Density based algorithms
+
+The main idea behind these kind of algorithms is that cluster is assigned based on points density distribution of data points. DBSCAN algorithm is the most widely discussed algorithm that takes into account two parameters. The first one is the radius of the neighborhood. The second one is is the minimum number of points that belongs to the neighborhood.
+
+## Model Based Clustering
+
+The most important part of this algorithms is that for each cluster different, the best model is fitted. Two main kinds of model-based clustering algorithms can be distinguished which are based on statistical learning method (COBWEB, GMM) and the other based on neural network learning method (SOM and ART).
+
+# Explaining the results of clustering
 
