@@ -10,7 +10,8 @@ bibliography: bibliography.bibtex
 knitr::opts_chunk$set(echo = TRUE,
                       results = 'asis')
 pacman::p_load(tidyverse, kableExtra, tidyverse, cluster, factoextra, dendextend,
-               summarytools, stats, flexclust, fpc, clustertend, ClusterR, clValid)
+               summarytools, stats, flexclust, fpc, clustertend, ClusterR, clValid,
+               mclust, kohonen)
 
 st_options(plain.ascii = FALSE,        # Always use this option in Rmd documents
            style        = "rmarkdown", # Always use this option in Rmd documents
@@ -321,20 +322,20 @@ which is usually fine by default.
 ```{r}
 d_pol_ds <- dist(pol_ds_scaled, method = "euclidean")
 hc5 <- hclust(d_pol_ds, method = "ward.D2" )
-sub_grp <- cutree(hc5, k = 6)
+sub_grp <- cutree(hc5, k = chosen_size)
 
-pol_ds_scaled <- 
-  pol_ds_scaled %>%
-  mutate(cluster_hier = sub_grp) 
+pol_ds <- 
+  pol_ds %>%
+  mutate(cluster_hier_ward_D2 = sub_grp) 
 
-pol_ds_scaled %>%
-  group_by(cluster_hier) %>% 
+pol_ds %>%
+  group_by(cluster_hier_ward_D2) %>% 
   count()
 ```
 
 
 ```{r}
-fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds_scaled$cluster_hier))
+fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds$cluster_hier_ward_D2))
 ```
 
 ### Evaluation indicators
@@ -346,6 +347,15 @@ fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds_scaled$cluster_hier))
 ```{r}
 hc4 <- diana(pol_ds_scaled)
 pltree(hc4, cex = 0.6, hang = -1, main = "dendrogram - diana")
+sub_grp <- cutree(hc4, k = chosen_size)
+
+pol_ds <- 
+  pol_ds %>%
+  mutate(cluster_hier_diana = sub_grp) 
+
+pol_ds %>%
+  group_by(cluster_hier_diana) %>% 
+  count()
 ```
 
 In order to perform hierarchical clustering euclidean distance is calculated first
@@ -355,31 +365,87 @@ which is usually fine by default.
 ```{r}
 d_pol_ds <- dist(pol_ds_scaled, method = "euclidean")
 hc5 <- hclust(d_pol_ds, method = "ward.D2" )
-sub_grp <- cutree(hc5, k = 6)
+sub_grp <- cutree(hc5, k = chosen_size)
 
-pol_ds_scaled <- 
-  pol_ds_scaled %>%
-  mutate(cluster_hier = sub_grp) 
+pol_ds <- 
+  pol_ds %>%
+  mutate(cluster_hier_wardD2 = sub_grp) 
 
-pol_ds_scaled %>%
-  group_by(cluster_hier) %>% 
+pol_ds %>%
+  group_by(cluster_hier_wardD2) %>% 
   count()
 ```
 
 
 ```{r}
-fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds_scaled$cluster_hier))
+fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds$cluster_hier_wardD2))
 ```
 
 ### Evaluation indicators
 
 ```{r}
-intern <- clValid(pol_ds_scaled %>% as.matrix(), chosen_size, clMethods = c("hierarchical",
-+ "kmeans", "diana", "fanny", "som", "pam", "sota", "clara",
-+ "model"), validation = "internal")
+intern <- clValid(pol_ds_scaled %>% as.matrix(), 
+                  chosen_size, 
+                  clMethods = 
+                    c("hierarchical", "kmeans", "diana", "agnes", "pam",
+                      "clara", "model"), 
+                  validation = "internal"
+                  )
+summary(intern)
 ```
 
-# Some of other clustering methods
+The highest connectivity is associated with PAM, CLARA and model clustering 
+algorithms. It should be minimized so taking into account this technique 
+the best algorithm is diana. Silhouette value is smallest for model based 
+and the maximum for diana algorithm. Based on this data we can assume that 
+based clustering winner algorithm is diana. 
+
+## Choosing appropriate names for clusters
+
+Based on per cluster results we can try to name formed clusters based on these 
+values in terms of international economy
+
+```{r}
+pol_ds_long <- 
+  pol_ds %>% 
+  select(-year, -cluster_kmeans, -cluster_pam,
+  -cluster_clara, -cluster_hier_ward_D2, -cluster_hier_wardD2) %>% 
+  select(starts_with("v2x_"), cluster_hier_diana) %>% 
+  pivot_longer(cols = c(-cluster_hier_diana))
+ 
+pol_ds_long %>% 
+  ggplot(aes(x = factor(cluster_hier_diana), 
+             y = value, 
+             fill= factor(cluster_hier_diana))) +
+  geom_boxplot() +
+  facet_wrap(~name, ncol = 5, shrink = FALSE, scales = "free") +
+  labs(title = 'Boxplots per variable per cluster') +
+  xlab("Cluster") + 
+  ylab("Value") +
+  theme(legend.position = "none")
+```
+
+```{r}
+pol_ds_long <-
+    pol_ds %>% 
+    select(-year, -cluster_kmeans, -cluster_pam,
+           -cluster_clara, -cluster_hier_ward_D2, -cluster_hier_wardD2) %>% 
+    select(-contains("v2"), cluster_hier_diana) %>%
+    pivot_longer(cols = c(-cluster_hier_diana))
+ 
+pol_ds_long %>% 
+  ggplot(aes(x = factor(cluster_hier_diana), 
+             y = value, 
+             fill= factor(cluster_hier_diana))) +
+  geom_boxplot() +
+  facet_wrap(~name, ncol = 5, shrink = FALSE, scales = "free") +
+  labs(title = 'Boxplots per variable per cluster') +
+  xlab("Cluster") + 
+  ylab("Value") +
+  theme(legend.position = "none")
+```
+
+# Some other clustering methods
 
 ## Gaussian mixture models
 
@@ -397,5 +463,124 @@ The main idea behind these kind of algorithms is that cluster is assigned based 
 
 The most important part of this algorithms is that for each cluster different, the best model is fitted. Two main kinds of model-based clustering algorithms can be distinguished which are based on statistical learning method (COBWEB, GMM) and the other based on neural network learning method (SOM and ART).
 
-# Explaining the results of clustering
+# Dimensionality Reduction
 
+The idea that is behind dimensionality reduction is to present dataset 
+by fewer dimensions in order to make it more interpretable, easier to visualize,
+less computationally heavy. Having a dataset with a lot of variables they 
+might be correlated with each other and a variable can be presented as 
+a combination of other features. What is important new features should not
+be correlated between themselves! 
+
+The most common approach for reducing number of features is the following:
+1. Decide on data standardization. 
+2. Compute covariance matrix with all possible pairs.
+3. Based on point 2 result compute eigenvectors and eigenvalues for PCA.
+4. Find top eigenvectors and eigenvalues.
+5. New principal components are variables as constraint of the variables with highest variance.
+6. Develop new features with columns as eigenvectors.
+7. Recast data along new principal axes.
+
+```{r}
+pacman::p_load(corrplot, maptools, smacof, gridExtra)
+```
+
+## Checking correlations
+```{r}
+pol_ds_scaled_cor <- cor(pol_ds_scaled, method="pearson")
+corrplot(pol_ds_scaled_cor, order ="alphabet", tl.cex=0.6)
+```
+
+Although there a lot of variables on the plot we can clearly see that a lot of variables are correlated either negatively or positively. 
+
+# MDS reduction
+
+As our data relates to social sciences we can definitely start with multidimensional scaling. Starting with definition, this is a nonlinear statistical technique originated in psychometrics. MDS keeps the distance between the points and reduces number of dimensions. Distances allow to preserve pattern and clusters. The metrics used in this methods, called proximity, describes there is a number that indicates how similar two objects are or are perceived to be. 
+
+## Classification of multidimensional scaling models
+
+In order to describe scaling models they can be broadly classified into metric vs non-metric and strain (classical scaling) vs stress (distance scaling) based MDS models. 
+
+## Applications 
+
+As MDS is one of the most widely used MDS techniques in data analysis of course it is not possible to provide a complete set of its uses. They find several applications in image processing or pre-process for algorithms that rely on Euclidean distances.  
+
+```{r}
+dist_pol_ds_scaled<-dist(t(pol_ds_scaled)) # as input we need distance between units
+mds3<-cmdscale(dist_pol_ds_scaled, k=2) #k - the maximum dimension of the space
+plot(mds3, type='n') # plot with labels
+pointLabel(mds3, labels = pol_ds %>% mutate(year = as.character(year)) %>% pull(year), cex=0.6, adj=0.5)
+```
+
+Using smacof package allows for different measurement scales of data such as
+ratio, interval, oridinal and mspline. 
+
+```{r}
+dis2<-sim2diss(pol_ds_scaled_cor, method=1, to.dist=TRUE)
+fit.data<-mds(dis2, ndim=2,  type="ratio") # from smacof::
+fit.data
+summary(fit.data)
+plot(fit.data)
+```
+
+We can also plot PCA with impact per observation for stress function. 
+
+```{r}
+plot(fit.data, pch=21, cex=as.numeric(fit.data$spp), bg="red")
+```
+
+
+### Measuring goodness of MDS 
+
+In order to measure how good is MDS functionality stress function can be 
+taken into account. 
+
+```{r}
+fit.data$stress
+```
+
+Proposes values have been proposed for measuring the goodness of the fit. 0.1 which
+is our case provides information that this is a fair result. This value should be 
+minimized. For this different methods can be analyzed.
+
+```{r}
+dis2<-sim2diss(pol_ds_scaled_cor, method=1, to.dist=TRUE)
+fit.data<-mds(dis2, ndim=2,  type="ordinal") # from smacof::
+fit.data$stress
+```
+
+Smallest value is yield by ordinal method which is non-metric MDS type where only thing that is important is the order relations between the dissimilarities.
+
+## Principal Component Analysis
+
+```{r}
+xxx.pca1<-prcomp(pol_ds_scaled_cor, center=FALSE, scale.=FALSE) # stats::
+xxx.pca1
+xxx.pca1$rotation
+summary(xxx.pca1)
+```
+
+For explaining 99% of the variance we need to take only first two Principal
+Components.
+
+```{r}
+xxx.pca2<-princomp(pol_ds_scaled_cor) # stats::princomp()
+loadings(xxx.pca2)
+plot(xxx.pca2)# the same will be plot(xxx.pca1)
+fviz_pca_var(xxx.pca1, col.var="steelblue")
+```
+
+Based on this plot the following intuition can be achieved: 
+parreg_P4 is oppositely correlated to the v2x_divparctrl_VDEM.
+
+```{r}
+fviz_eig(xxx.pca1, choice='eigenvalue') # eigenvalues on y-axis
+fviz_eig(xxx.pca1) # percentage of explained variance on y-axis
+```
+
+```{r}
+var<-get_pca_var(xxx.pca1)
+a<-fviz_contrib(xxx.pca1, "var", axes=1, xtickslab.rt=90) # default angle=45Â°
+b<-fviz_contrib(xxx.pca1, "var", axes=2, xtickslab.rt=90)
+grid.arrange(a,b,top='Contribution to the first two Principal Components')
+```
