@@ -1,8 +1,13 @@
 ---
-title: "UL project clustering and dimension reduction"
+title: "International Economics dataset, clustering and dimensionality reduction"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
 author: "Mateusz Baryła"
 date: "6 12 2020"
-output: html_document
 bibliography: bibliography.bibtex
 ---
 
@@ -482,7 +487,7 @@ The most common approach for reducing number of features is the following:
 7. Recast data along new principal axes.
 
 ```{r}
-pacman::p_load(corrplot, maptools, smacof, gridExtra)
+pacman::p_load(corrplot, maptools, smacof, gridExtra, psych)
 ```
 
 ## Checking correlations
@@ -554,7 +559,7 @@ Smallest value is yield by ordinal method which is non-metric MDS type where onl
 ## Principal Component Analysis
 
 ```{r}
-xxx.pca1<-prcomp(pol_ds_scaled_cor, center=FALSE, scale.=FALSE) # stats::
+xxx.pca1<-prcomp(pol_ds_scaled, center=FALSE, scale.=FALSE) # stats::
 xxx.pca1
 xxx.pca1$rotation
 summary(xxx.pca1)
@@ -564,7 +569,7 @@ For explaining 99% of the variance we need to take only first two Principal
 Components.
 
 ```{r}
-xxx.pca2<-princomp(pol_ds_scaled_cor) # stats::princomp()
+xxx.pca2<-princomp(pol_ds_scaled) # stats::princomp()
 loadings(xxx.pca2)
 plot(xxx.pca2)# the same will be plot(xxx.pca1)
 fviz_pca_var(xxx.pca1, col.var="steelblue")
@@ -584,3 +589,49 @@ a<-fviz_contrib(xxx.pca1, "var", axes=1, xtickslab.rt=90) # default angle=45Â°
 b<-fviz_contrib(xxx.pca1, "var", axes=2, xtickslab.rt=90)
 grid.arrange(a,b,top='Contribution to the first two Principal Components')
 ```
+
+Rotated PCA allows easier interpretation of factors used in analysis due to the change in structure of components. PCA rotates components across the axis of the factors. The most commonly used option is varimax which minimizes the number of variables needed to explain a given factors. 
+
+```{r}
+xxx.pca4<-principal(pol_ds_scaled, nfactors=2, rotate="varimax")
+xxx.pca4
+```
+
+```{r}
+summary(xxx.pca4)
+```
+
+```{r}
+# printing only the significant loadings
+print(loadings(xxx.pca4), digits=3, cutoff=0.4, sort=TRUE)
+```
+
+```{r}
+plot(xxx.pca1)
+plot(xxx.pca1, type = "l")
+fviz_eig(xxx.pca1)
+```
+
+## Uniqueness and complexity
+
+Uniqueness is the relation of variance according to share in other variables. For PCA we want it to be low, then we know that the variable is not correlated with other variables in the model. This is similar to multicollinearity. 
+
+Complexity corresponds to the number of factor loads that take values greater than zero. Given the relatively large loading of one factor only the complexity is near to 1. To paraphrase, we want to know what is the overall contribution of all factors to the single variable. We want to keep our contribution low because it involves a more difficult interpretation of factors.
+
+```{r}
+set<-data.frame(complex=xxx.pca4$complexity, unique=xxx.pca4$uniqueness)
+set.worst<-set[set$complex>1.8 & set$unique>0.78,]
+set.worst
+```
+
+Combining complexity and uniqueness together we can spot variables that may lead to problems. 
+
+```{r}
+fviz_pca_ind(xxx.pca1, col.ind="cos2", geom="point", gradient.cols=c("white", "#2E9FDF", "#FC4E07" ))
+```
+
+```{r}
+fviz_pca_var(xxx.pca1, col.var = "steelblue")
+```
+
+

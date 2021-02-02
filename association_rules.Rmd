@@ -1,0 +1,201 @@
+---
+title: "International Economics dataset, association rules"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+author: "Mateusz Baryła"
+date: "6 12 2020"
+bibliography: bibliography.bibtex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      results = 'asis')
+pacman::p_load(tidyverse, kableExtra, kohonen, arules)
+
+knitr::opts_chunk$set(plain.ascii = FALSE,        # Always use this option in Rmd documents
+           style        = "rmarkdown", # Always use this option in Rmd documents
+           footnote     = NA,          # Makes html-rendered results more concise
+           subtitle.emphasis = FALSE)  # Improves layout with some rmardown themes
+```
+
+## Introduction
+
+Association rules are often used for reducing number of transactions in the 
+databases where each row is coded by binary attributes. There is no need for 
+them to be trained, or labeling dataset beforehand. Most common applications 
+are found in the market basket analysis, discovering interesting patterns of 
+DNA and protein sequences, common patterns of behavior can be found for 
+customers that proceed customers dropping their cell phone operator.
+
+## Dataset
+
+### Instacart Market Basket Analysis
+
+```{r}
+aisles <- read.csv("data\\aisles.csv", sep=",")
+departments <- read.csv("data\\departments.csv", sep=",")
+order_products_train <- read.csv("data\\order_products__prior.csv", sep=",")
+orders <- read.csv("data\\orders.csv", sep=",")
+products <- read.csv("data\\products.csv", sep=",")
+```
+
+```{r}
+trans <- 
+  order_products_train %>% 
+  inner_join(products, by = "product_id", keep = FALSE) %>%
+  inner_join(aisles, by = "aisle_id", keep = FALSE) %>% 
+  inner_join(orders, by = "order_id", keep = FALSE) %>% 
+  inner_join(departments, by ="department_id", keep = FALSE)
+```
+
+```{r}
+trans %>% 
+  select(-order_id,-aisle_id, -department_id, -user_id, -eval_set) %>% 
+  head() %>%
+  write.csv("E:\\GitHub\\unsupervised-learning\\data\\transactions.csv", 
+                    sep=",", row.names = FALSE, quote = TRUE)
+```
+
+Data provided on kaggle consist of 6 different files, which will be analyzed and 
+merged into one big transactional dataset after basic preprocessing and 
+EDA process. Products prior are merged into one dataset with 14 columns. The 
+single observation consist of order_id, product_name, add_to_cart_order, reordered,
+eval_set, order_dow, order_hour_of_day, days_since_prior_order, department_name.
+Norows from original dataframe are removed therefore 32434489 observations will be
+investigated.
+
+```{r}
+trans <- read.transactions(file = "E:\\GitHub\\unsupervised-learning\\data\\transactions.csv",format = "basket", sep = ",", quote = "")
+```
+
+### The nature of the dataset
+
+In order to provide master dataset that can be used by researchers from
+international political economy 89 data resources have been merged. Observations
+are identified by country-year the unit of analysis. Countries are identified by 
+Gleditsch-Ward number ot in an alternative version by Correlates of War (COW).
+Most of the dataset components begin after Second World War. 
+
+### Variable naming
+
+Each of 89 dataset has been given a unique suffix that uniquely identifies it.
+
+## Dataset preprocessing
+
+Firstly data is loaded, then we convert it to tibble as tidyverse will be 
+mainly used in this project.
+
+```{r}
+load(paste0("data/", "master_ipe_v4.rdata"))
+ipe_v4 <- as_tibble(ipe_v4)
+```
+
+Dimensions of the dataset needs to be investigated as well.
+
+```{r}
+ipe_v4 %>% dim()
+```
+
+
+Master table consists of 25850 rows and 1043 variables. Each of them is described 
+in the codebook provided by library maintainers. They are divided into following 
+groups:
+* economic
+* political
+* social and cultural
+* geographic 
+* other (e.g. infrastructure, military)
+
+Very good quality of the data is provided by Varities of Democracy Dataset (VDEM)
+inside political section, it will definitely be included not only because of 
+the quality but also its popularity and inside class recommendation. 
+
+The other  dataset chosen by me is going to be "Polity IV Democracy".
+
+```{r}
+pol_ds <- 
+  ipe_v4 %>% 
+  filter(country == "Poland", year > 1918, 
+         !(year %in% c(1939, 1940, 1941, 1942, 1943, 1944, 1945, 2020))) %>% 
+  select(year, starts_with("v2"), contains("P4"), 
+         -c(change_P4, sf_P4, fragment_P4, regtrans_P4, countryname_raw_P4, 
+            v2x_hosinter_VDEM, v2x_suffr_VDEM, v2elsrgel_VDEM, v2elreggov_VDEM,
+            v2xlg_leginter_VDEM, v2x_elecreg_VDEM, v2xlg_elecreg_VDEM)) 
+pol_ds %>%
+  head() %>% 
+  kable()
+```
+
+## Exploratory data analysis
+
+In every modeling process we should perform exploratory data analysis before moving to 
+the next points. 
+
+```{r}
+dfSummary(pol_ds, plain.ascii = FALSE, style = "grid", 
+          graph.magnif = 0.75, valid.col = FALSE, tmp.img.dir = "/tmp")
+```
+
+Thanks to the broad landscape of autoEDA packages we can very easily generate 
+some intuition towards the analyzed data. The chosen subset of data is associated 
+with brilliant starting point for analysis having only two columns,
+v2x_gender_VDEM and v2x_genpp_VDEM, with missing value. The graphs show distribution
+for each variable. The year column shows that there is no data between years 1939-1948.
+Most of the variables there are so called indexes with range between 0 and 1.
+For P4 varialbes the minimum value can be lower than zero. Durable_P4 variable is 
+highly skewed. For v2xcl_rol_VDEM we can clearly see oposite pattern, however  
+there is a misssing range of numbers for which we have little to no observations. 
+
+# Association rules
+
+## General view
+
+
+
+## Measuring rule interest
+
+Two metrics are taken into account support 
+and confidence for association rules. Support describes how frequently an items or rule occurs in the data. THis is simply the number of occurrences of particular item
+divided by total number of rows.
+
+Confidence measure gives the intuition what is the proportion of transactions where the presence of item or itemset X results in the presence of item or itemset Y.
+
+Combination of two mentioned metrics is lift which is described as the division of confidence by support. A value around 1 suggests independent itemsets. Given a value less than 1 implies negative association between itemsets. 
+
+## Steps for association rules
+
+Reading the data, converting the continuous into discrete data.
+
+### Dataset operations
+
+Single-dimension:
+- Checking the distribution of most popular items
+- Counting how many items were sold in general
+
+Two-dimensions;
+- What are the most popular pairs
+- Measures and tests for pairs
+
+### Single and two dimensions frequency inspection
+
+Overview of multi-items sets
+- selection according to support
+- selection of most frequent
+
+### Itemsets
+
+Checking multi-items sets
+- selection according to support 
+- selection of most frequent items
+
+### Rules
+
+Here the patterns found in the dataset are converted into rules with causes and effects.
+
+### Statistics
+
+Jaccard dissimilarity makes cluster analysis available. 
