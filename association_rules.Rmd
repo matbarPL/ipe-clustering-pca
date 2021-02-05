@@ -2,6 +2,10 @@
 title: "International Economics dataset, association rules"
 output:
   html_document:
+    pandoc_args: [
+      "+RTS", "-K64m",
+      "-RTS"
+    ]
     toc: true
     toc_float:
       collapsed: false
@@ -106,6 +110,7 @@ a decision to omit this column as well order_number.
 
 ```{r}
 trans <- as(trans_for_ar, "transactions")
+trans_for_viz <- as(trans_for_ar %>% select(product_name, aisle, department), "transactions")
 ```
 
 The final transactional dataframe is made of the following attributes:
@@ -189,7 +194,7 @@ inspect(head(rules.by.supp))
 ```{r}
 rules.Senior.hours<-apriori(data=trans, 
                                parameter=list(supp=0.001, conf=0.08), 
-                               appearance=list(default="lhs", rhs= "Senior hours"), control=list(verbose=F))
+                               appearance=list(default="lhs", rhs= "time_of_day=Senior hours"), control=list(verbose=F))
 
 rules.Senior.hours.byconf<-sort(rules.Senior.hours, by="confidence", decreasing=TRUE)
 inspect(head(rules.Senior.hours.byconf))
@@ -204,9 +209,10 @@ in the rhs will be chosen with the level of confidence which is equal to support
 ## What is the profile of transactions that are being made during Senior hours?
 
 ```{r}
-rules.Senior.hours<-apriori(data=trans, 
-                               parameter=list(supp=0.001, conf=0.08), 
-                               appearance=list(default="lhs", rhs= "Senior hours"), control=list(verbose=F))
+rules.Senior.hours<-apriori(data=trans,
+                            parameter=list(supp=0.001, conf=0.08),
+                            appearance=list(default="lhs", rhs= "time_of_day=Senior hours"), 
+                            control=list(verbose=F))
 
 rules.Senior.hours.byconf<-sort(rules.Senior.hours, by="confidence", decreasing=TRUE)
 inspect(head(rules.Senior.hours.byconf))
@@ -221,11 +227,13 @@ Let's try now to check what is the profile of these two categories based on hour
 
 ```{r}
 rules.muscles.joints.pain.relief<-apriori(data=trans, 
-                               parameter=list(supp=0.0001, conf=0.000001), 
-                               appearance=list(default="lhs", rhs= "muscles joints pain relief"), 
-                                control=list(verbose=F))
+                                          parameter=list(supp=0.0001, conf=0.000001), 
+                                          appearance=list(default="lhs", rhs= "aisle=muscles joints pain relief"),
+                                          control=list(verbose=F))
 
-rules.muscles.joints.pain.relief.bycoverage<-sort(rules.muscles.joints.pain.relief, by="coverage", decreasing=TRUE)
+rules.muscles.joints.pain.relief.bycoverage<-sort(rules.muscles.joints.pain.relief, 
+                                                  by="coverage", 
+                                                  decreasing=TRUE)
 inspect(head(rules.muscles.joints.pain.relief.bycoverage))
 ```
 
@@ -238,7 +246,7 @@ placed in the top of the resulting table.
 ```{r}
 rules.friday<-apriori(data=trans, 
                                parameter=list(supp=0.0001, conf=0.000001), 
-                               appearance=list(default="lhs", rhs= "Friday"), 
+                               appearance=list(default="lhs", rhs= "dow_name=Friday"), 
                                 control=list(verbose=F))
 
 rules.friday.byconfidence<-sort(rules.friday, by="confidence", decreasing=TRUE)
@@ -269,7 +277,7 @@ addition to the alcoholic drinks.
 ```{r}
 rules.lunch.meat<-apriori(data=trans, 
                                parameter=list(supp=0.0001, conf=0.000001), 
-                               appearance=list(default="lhs", rhs= "lunch meat"), 
+                               appearance=list(default="lhs", rhs= "aisle=lunch meat"), 
                                 control=list(verbose=F))
 
 rules.lunch.meat.byconfidence<-sort(rules.lunch.meat, by="confidence", decreasing=TRUE)
@@ -279,7 +287,7 @@ inspect(head(rules.lunch.meat.byconfidence))
 ```{r}
 rules.lunch.meat<-apriori(data=trans, 
                                parameter=list(supp=0.0001, conf=0.000001), 
-                               appearance=list(default="lhs", rhs= "lunch meat"), 
+                               appearance=list(default="lhs", rhs= "aisle=lunch meat"), 
                                 control=list(verbose=F))
 
 rules.lunch.meat.byconfidence<-sort(rules.lunch.meat, by="confidence", decreasing=TRUE)
@@ -287,7 +295,80 @@ inspect(head(rules.lunch.meat.byconfidence))
 ```
 
 Let's investigate particular weekdays in terms of some association  metrics.
+
 ```{r}
-rules <- apriori(trans)
-rules.sub <- subset(rules, subset = rhs %pin% "dow_name=")
+rules <- apriori(trans, parameter=list(supp=0.001, conf=0.001))
+rules.dow.tod <- subset(rules, subset = lhs %pin% "dow_name=" & rhs %pin% "time_of_day=")
+rules.dow.tod.by.conf <- sort(rules.dow.tod, by = "confidence", decreasing=TRUE)
+inspect(head(rules.dow.tod.by.conf))
 ```
+
+In terms of first row of rules sorted by confidence 5.8 % of transactions
+containing during Night has been made on Thursday. Discussing lift it 
+also indicates that the strongest association is between Thursday and Night.
+
+```{r}
+rules <- apriori(trans, parameter=list(supp=0.001, conf=0.001))
+rules.tod.dow <- subset(rules, subset = lhs %pin% "time_of_day=" & rhs %pin% "dow_name=")
+rules.tod.dow.by.count <- sort(rules.tod.dow, by = "count", decreasing=TRUE)
+inspect(head(rules.tod.dow.by.count))
+```
+
+Most of the transactions found in dataset is on Monday Afternoon. 
+
+```{r}
+rules <- apriori(trans, parameter=list(supp=0.001, conf=0.001))
+rules.tod.dow <- subset(rules, subset = lhs %pin% "time_of_day=" & rhs %pin% "dow_name=")
+rules.tod.dow.by.count <- sort(rules.tod.dow, by = "count", decreasing=TRUE)
+inspect(head(rules.tod.dow.by.count))
+```
+
+```{r}
+trans.sel <-trans[,itemFrequency(trans)>0.05] # selected transations
+d.jac.i<-dissimilarity(trans.sel, which="items") # Jaccard as default
+```
+
+```{r}
+plot(hclust(d.jac.i, method="ward.D2"), main="Dendrogram for items")
+```
+
+The interpretation of the hclust graph is following if we keep three biggest 
+clusters:
+* the first group of transactions is formed out of fresh vegetables and fresh fruits
+which do belong to produce department,
+* the second group contains transactions made between 12 and 18,
+* last but not least we have third cluster that can be best described as 
+mostly snacks and beverages which are bought either at night or between 
+10 and 12.
+
+```{r}
+itemFrequencyPlot(trans_for_viz, topN=10, type="absolute", main="Item Frequency")
+```
+
+In terms of items frequency it is shown that most of the record has been added 
+in the afternoon. Customers also focus on keeping in shape since a lot of
+transactions are made inside produce department, others in dairy eggs. 
+
+```{r}
+rules_for_viz <- apriori(trans_for_viz, parameter = list(support = 0.001))
+plot(rules_for_viz, method = "group")
+```
+
+```{r}
+plot(head(rules_for_viz, 30, by = "lift"), method = "paracoord", reorder =TRUE)
+```
+
+Figure above shows rules with arrows where the width of arrows is linked to support 
+and the color confidence contains information about confidence of given rule. 
+The values of each dimension are connected with each other via line. The y-axis 
+is formed via nominal values and the x-axis presents the position in the rule.
+
+# Conclusion
+
+Association rules are very useful technique for mining patterns in large datasets
+due to their algorithms. What is more it can save a lot of time in finding user
+preferences and what drives their choices. Most of the useful functionalities 
+are implemented either in a form of graphs or association rules mining functionalities.
+For latter arulesViz is widely used where a lot of brand new visualization techniques to 
+research association rules has been implemented. The main features of arules in terms
+of association rules are efficient implementation with sparse matrices usage.
