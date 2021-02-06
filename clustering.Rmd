@@ -1,9 +1,11 @@
 ---
-title: "Measuring similarities between polish economy and politics across years. Clustering of International Political Economy dataset."
+title: "Measuring similarities between polish economy and politics across years. Clustering and dimensionality reduction for International Political Economy dataset."
 output:
   html_document:
-    toc: true
-    toc_float: true
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
 author: "Mateusz Baryła"
 date: "05 02 2021"
 bibliography: bibliography.bibtex
@@ -51,6 +53,7 @@ mainly used in this project.
 
 ```{r}
 load(paste0("data/", "master_ipe_v4.rdata"))
+ipe_mapping <- xlsx::read.xlsx2("data\\ipe_mapping.xlsx", sheetIndex = 1)
 ipe_v4 <- as_tibble(ipe_v4)
 ```
 
@@ -88,11 +91,6 @@ pol_ds <-
 ```
 
 
-```{r}
-dfSummary(pol_ds, plain.ascii = FALSE, style = "grid", 
-          graph.magnif = 0.75, valid.col = FALSE, tmp.img.dir = "/tmp")
-```
-
 In every modeling process we should perform exploratory data analysis before moving to 
 the next points. Thanks to the broad landscape of autoEDA packages [@Staniak_2019] we can very easily generate 
 some intuition towards the analyzed data. The chosen subset of data is associated 
@@ -104,12 +102,17 @@ For P4 varialbes the minimum value can be lower than zero. Durable_P4 variable i
 highly skewed. For v2xcl_rol_VDEM we can clearly see opposite pattern, however 
 there is a missing range of numbers for which we have little to no observations. 
 
+```{r}
+dfSummary(pol_ds, plain.ascii = FALSE, style = "grid", 
+          graph.magnif = 0.75, valid.col = FALSE, tmp.img.dir = "/tmp")
+```
+
 # Clustering
 
 Clustering in an unsupervised learning technique that uses machine learning 
 algorithms to assign similar data to groups. Mostly it is used for knowledge 
 discovery of hidden patterns found within data. The main idea is to cluster 
-similar observations that they are grouped together. The more diverse groups
+similar observations so that they are grouped together. The more diverse groups
 the better. In an ideal world, the results obtained from clustering should not 
 only have good statistical properties (compact, well-separated, connected and 
 stable), but also yield output that is relevant in terms of processed data.
@@ -146,7 +149,7 @@ ac <- function(x) {
 map_dbl(m, ac)
 ```
 
-Other methods also yield very good results. 
+Other methods also yield very promising results. 
 
 ## Optimal number of clusters
 
@@ -158,8 +161,7 @@ as square root of (n/2) where n is denoted as optimal number of clusters.
 sqrt((pol_ds_scaled %>% nrow()) / 2)
 ```
 
-Now we are coming back to elbow method in order to investigate optimal 
-number of clusters.
+Now we are coming back to elbow method.
 
 ```{r}
 opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, plot_clusters = TRUE)
@@ -177,14 +179,14 @@ opt <- Optimal_Clusters_KMeans(pol_ds_scaled,
                                criterion = 'silhouette')
 ```
 
-The other method uses silhouette index to find optimal number of clusters which 
+The other method uses silhouette index to find best number of groups inside the data set which 
 shows the maximum value for 2 clusters and lowest for 6. Measure method takes 
 into account what is the difference between points that belong to the same 
 cluster and what is the difference between different clusters. 
 
 Methods presented above are not very formalized due to their graphical way 
 of presenting results. One way to address this drawback is a statistical 
-procedure called gap statistics [@gap_Statistics]. The concept is based on the 
+procedure called *gap statistics* [@gap_Statistics]. The concept is based on the 
 graph of log(W_k) by making comparison with its expectation under an appropriate
 null reference distribution of the data. For latter one appropriate reference distribution 
 need to be found in the data. Then the estimation of the optimal number of 
@@ -204,7 +206,7 @@ clusGapRes <- clusGap(pol_ds_scaled, FUN = kmeans, nstart = 20, K.max = 20, B = 
 ```
 
 Number of clusters proposed by this sophisticated method is equal to 13 which is 
-presented by "Number of clusters (method 'firstSEmax', SE.factor=1): 13". Mainly 
+presented by *"Number of clusters (method 'firstSEmax', SE.factor=1): 13"*. Mainly 
 due to its advanced methodology this number has been chosen in further analysis.
 
 ```{r}
@@ -244,6 +246,10 @@ pol_clusters <- kmeans(pol_ds_scaled %>% as.matrix(), chosen_size)
 pol_ds$kmeans <- pol_clusters$cluster
 ```
 
+```{r}
+fviz_cluster(pol_clusters, data = pol_ds_scaled)
+```
+
 ### Evaluation indicators
 
 One of the metric for k-means clustering can be checking what is the ratio between cluster sum of squares and total sum of squares:
@@ -252,8 +258,8 @@ One of the metric for k-means clustering can be checking what is the ratio betwe
 (pol_clusters$betweenss /pol_clusters$totss)*100
 ```
 
-The 87.46361 is the total variance in the data that is explained by the clustering.
-Thanks to clustering the algorithm is able to reduce sum of squares to 87.4631%.
+94.50958 is the total variance in the data that is explained by the clustering.
+Thanks to clustering the algorithm is able to reduce sum of squares to 94.5%.
 
 ```{r}
 sil <- silhouette(x = pol_ds$kmeans, dist(pol_ds_scaled))
@@ -276,7 +282,10 @@ c1<-pam(pol_ds_scaled, chosen_size)
 pol_ds$pam <- c1$clustering
 ```
 
-After assigning we can easily show counts per cluster. 
+```{r}
+fviz_cluster(c1, geom="point", ellipse.type="norm") 
+```
+
 
 ## CLARA
 
@@ -402,20 +411,21 @@ the best algorithm.
 Based on per cluster results we can try to name formed clusters based on these 
 values in terms of international economy.
 
-```{r}
+```{r, fig.height=20, fig.width=12}
 pol_ds_long <- 
   pol_ds %>% 
   select(-year, -kmeans, -pam,
   -clara, -hier_ward_D2) %>% 
   select(starts_with("v2x_"), hier_diana) %>% 
-  pivot_longer(cols = c(-hier_diana))
+  pivot_longer(cols = c(-hier_diana)) %>% 
+  inner_join(ipe_mapping, by = c("name" = "variable"))
  
 pol_ds_long %>% 
   ggplot(aes(x = factor(hier_diana), 
              y = value, 
              fill= factor(hier_diana))) +
   geom_boxplot() +
-  facet_wrap(~name, ncol = 3, shrink = FALSE, scales = "free") +
+  facet_wrap(~pretty_name, ncol = 3, shrink = FALSE, scales = "free") +
   labs(title = 'Boxplots per variable per cluster') +
   xlab("Cluster") + 
   ylab("Value") +
@@ -426,30 +436,82 @@ Describing clusters with so many variables might be complicated, the
 first insight that is very easily visible is that *cluster 9* has 
 the highest IQR across most of the dimensions. Clusters between 9 
 and 13 are very similar to each other which might suggest that 13 
-clusters might sort of overfit the data. 
+clusters might sort of overfits the data. 
 
-1. First cluster 
-
-```{r}
+```{r, fig.height=10, fig.width=12}
 pol_ds_long <-
     pol_ds %>% 
     select(-year, -kmeans, -pam,
            -clara, -hier_ward_D2) %>% 
     select(-contains("v2"), hier_diana) %>% 
-    pivot_longer(cols = c(-hier_diana))
+    pivot_longer(cols = c(-hier_diana)) %>% 
+    inner_join(ipe_mapping, by = c("name" = "variable"))
  
 pol_ds_long %>% 
   ggplot(aes(x = factor(hier_diana), 
              y = value, 
              fill= factor(hier_diana))) +
   geom_boxplot() +
-  facet_wrap(~name, ncol = 5, shrink = FALSE, scales = "free") +
+  facet_wrap(~pretty_name, ncol = 5, shrink = FALSE, scales = "free") +
   labs(title = 'Boxplots per variable per cluster') +
   xlab("Cluster") + 
   ylab("Value") +
   theme(legend.position = "none")
 ```
 
+List of years for each cluster which can be used for evaluation of clustering
+quality using political economy knowledge.
+
+```{r}
+pol_ds %>% 
+  group_by(hier_diana) %>% 
+  mutate(year = paste0(year, collapse=",")) %>% 
+  slice(1) %>% 
+  select(year) %>% 
+  kable_head()
+```
+
+Short description of each cluster by year and box plots variables:
+
+*1. First cluster: observations that mostly correspond to post-war period.*
+Regulation of participation are very low and since it is the heart of 
+democracy, they indicates that there are rules for when and how elections are 
+expressed [@10.1371/journal.pone.0045838].
+*2. Second cluster: political developments in Poland, Piłsudski resigned from office, 
+The May Coup resulted in overthrowing President Stanisław Wojciechowski and
+Prime Minister Wincenty Witos who were democratically elected.* What definitely 
+distinguishes this cluster is elected executive index which not essentialy 
+should highly correspond to decision what was the level of democracy, it can rather be used to
+aggregate higher-order indices. It tries to measure whether chief executive
+was elected directly or indirectly. Of course corresponding to the aforementioned 
+events in Poland it is clear that this metric shall be rather low.
+*3. Third cluster: before second World war, new Polish Constitution has been adopted, Piłsudski dies.* What can be not very easily spotted here is the divided party control index.  [@10.2307/419392]
+*4. Fourth cluster: 7 important years for defense minister of Poland, Konstanty Rokossowski.* Women political participation index value has large interquartile range which can
+arise from Stanilist employment policies that aimed at the equality of sexes [@10.2307/3185730].
+*5. Fifth cluster: year that mainly has been affected in politcs by nearly 50,000 political prisoners that were being held in prison* that is also visible on boxplot 
+of Physical violence index, that is very low which indicates that citizens were not really safe.
+*6. Sixth cluster: one of the most heterogeneous cluster in term of years, 4 different decades falls
+into this group of observations.* All dimensions despite the corruption related and regime
+durability
+have very low IQR.
+*7. Seventh cluster: second very heterogeneous cluster,* the highest number number of observations
+belongs here. Similar to cluster sixth with medians slightly below medians of cluster sixth.
+*8. Eighth cluster: Round Table Talks that lead to political and economical reforms.* Since it 
+is only one observation boxplots does not bring a lot of value here. It can
+be described as some vertical line that divides polish history into two separate 
+periods which is essentially true.
+*9. Ninth cluster: in 1990 Lech Wałęsa won the presidential election, in 1995 
+Wałęsa demanded Pawlak's resignation in January 1995.* Cluster that has the 
+highest IQR across most of the dimensions.
+*10. Tenth cluster: times after Round Table Talks excluding presidential elections.*
+Deliberative democracy index has the highest value.
+*11. Eleventh cluster: presidential elections years.* This is the onlu group of observations where the political competition
+has different values of quartiles.
+*12. Twelfth cluster: Lech Wałęsa and Lech Kaczyński presidency. *We can cearly 
+see that egalitarian component index shows here that the resources inside 
+society has been distributed equally in society.
+*13. Thirteenth cluster: Andrzej Duda presidency and PiS single-party government.*
+Even though women political participation index showed very high values.
 
 
 # Some of the other clustering methods
@@ -615,10 +677,6 @@ Combining complexity and uniqueness together we can spot variables that may lead
 fviz_pca_ind(xxx.pca1, col.ind="cos2", geom="point", gradient.cols=c("white", "#2E9FDF", "#FC4E07" ))
 ```
 
-```{r}
-fviz_pca_var(xxx.pca1, col.var = "steelblue")
-```
-
 # Summary
 
 The problem of estimating number of clusters in dataset can be quite hard 
@@ -629,7 +687,8 @@ cluster validation package that can help with task that are performed
 without external knowledge. 
 
 The data set collections itself was very useful in understanding problems 
-of International Political Economy. 
-
+of International Political Economy. The results of clustering are very promising
+in terms of their proposed definition that suggests that polish history 
+can be very appealing taking into account its variability.
 
 # Bibliography
