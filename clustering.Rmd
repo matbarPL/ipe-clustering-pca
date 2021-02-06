@@ -1,6 +1,5 @@
 ---
-title: Measuring similarities between polish economy and politics across years. Clustering
-  and dimensionality reduction for International Political Economy dataset.
+title: "Measuring similarities between Polish economy and politics across the years. Clustering and dimensionality reduction for the International Political Economy dataset."
 author: "Mateusz Baryła"
 date: "05 02 2021"
 output:
