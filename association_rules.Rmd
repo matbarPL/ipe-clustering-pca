@@ -1,18 +1,21 @@
 ---
-title: "International Economics dataset, association rules"
+title: "Rules that inside shopping cart. How to instantly measure transactions relationships?"
+author: "Mateusz Baryła"
+date: "06.02.2021"
 output:
   html_document:
-    pandoc_args: [
-      "+RTS", "-K64m",
-      "-RTS"
-    ]
-    toc: true
+    df_print: paged
+    pandoc_args:
+    - +RTS
+    - -K512m
+    - -RTS
+    toc: yes
     toc_float:
-      collapsed: false
-      smooth_scroll: false
-author: "Mateusz Baryła"
-date: "6 12 2020"
-bibliography: bibliography.bibtex
+      collapsed: no
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+bibliography: bibliography_association.bibtex
 ---
 
 ```{r setup, include=FALSE}
@@ -22,26 +25,32 @@ pacman::p_load(tidyverse, kableExtra, kohonen,
                arules, arulesCBA, arulesViz,
                randomNames)
 
-knitr::opts_chunk$set(plain.ascii = FALSE,        # Always use this option in Rmd documents
-           style        = "rmarkdown", # Always use this option in Rmd documents
-           footnote     = NA,          # Makes html-rendered results more concise
-           subtitle.emphasis = FALSE)  # Improves layout with some rmardown themes
+knitr::opts_chunk$set(plain.ascii = FALSE,
+           style        = "rmarkdown",
+           footnote     = NA,         
+           subtitle.emphasis = FALSE,
+           results = 'asis')
 ```
 
-## Introduction
+# Introduction
 
-Association rules are often used for reducing number of transactions in the 
-databases where each row is coded by binary attributes. There is no need for 
-them to be trained, or labeling dataset beforehand. Most common applications 
-are found in the market basket analysis, discovering interesting patterns of 
-DNA and protein sequences, common patterns of behavior can be found for 
-customers that proceed customers dropping their cell phone operator.
+During last year a retail optimization has gained a lot of attention in 
+the data science community. The COVID-19 pandemic resulted in restrictions
+that brought restrictions that changed a behavior of customers. Retail 
+industry forced the closure of physical stores. "The Next Normal" requires 
+adaptation to new requirements and the winners are these retailers that 
+priorities online retail. For instance in United States, e-commerce availability
+and hygiene caused 17 percent of consumers to leave their primary store. One
+of the American retailers, Instacart has already adressed issue of optimizing
+e-commerce and released prediction competition on kaggle with several data sets [@kaggle]. 
+**Instacart** is an online American retailer that uses advanced analytics algorithms
+to provide best experience for their customers. 
 
-## Dataset
+# Dataset preprocessing
 
-### Instacart Market Basket Analysis
+## Instacart Market Basket loading
 
-Firstly all the data need to be loaded to the R environment.
+Firstly all the data need to be loaded to the R environment. 
 
 ```{r}
 aisles <- read.csv("data\\aisles.csv", sep=",")
@@ -52,61 +61,88 @@ products <- read.csv("data\\products.csv", sep=",")
 random_names <- read.csv("E:\\GitHub\\unsupervised-learning\\data\\random_names.csv", sep=",")
 ```
 
-Then in order to reduce the number of rows sample fraction out of order products 
-is taken. We take 3% of transactions which still result in around 800 000 
+Then in order to reduce the number of rows sample fraction out of order products
+is taken. We take 50% of transactions which still result in more than half a million 
 transactions.
 
 ```{r}
 set.seed(0402)
-trans <- 
-  order_products_train %>% 
-  sample_frac(size = 0.5) %>% 
+trans <-
+  order_products_train %>%
+  sample_frac(size = 0.5) %>%
   inner_join(products, by = "product_id", keep = FALSE) %>%
-  inner_join(aisles, by = "aisle_id", keep = FALSE) %>% 
-  inner_join(orders, by = "order_id", keep = FALSE) %>% 
+  inner_join(aisles, by = "aisle_id", keep = FALSE) %>%
+  inner_join(orders, by = "order_id", keep = FALSE) %>%
   inner_join(departments, by ="department_id", keep = FALSE)
 ```
 
-Transactional data set is not very easy in interpretation in current format. 
+## Preprocessing 
+
+A transactional data set is not very easy in interpretation in current format.
 As for now data set contains a lot of ids which are not very interpretable.
-Since then a decision is made to perform several transformation which will 
+A decision has been made to perform several transformation which will
 result in transactional data.
 
 ```{r}
-day_of_week <- 
+kable_head <- function(df){
+  df %>% kable() %>% head()
+}
+```
+
+```{r}
+day_of_week <-
   tibble(day_id = 0:6,
          dow_name = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
          )
-reordered_df <- 
+
+day_of_week %>% kable_head
+
+reordered_df <-
   tibble(reordered_id = 0:1,
          reorder_name = c("Not reordered", "Reordered")
          )
-order_hour_of_day <- 
+
+reordered_df %>% kable_head
+
+order_hour_of_day <-
   tibble(
        hour_id = 0:23,
        time_of_day = c(rep("Night",6), rep("Morning", 4), rep("Senior hours", 2),
                     rep("Noon", 2), rep("Afternoon", 4), rep("Early night",4), rep("Night", 2))
        )
+
+order_hour_of_day %>% kable_head
 ```
 
+Above three mapping tables have been created. First two ones are self explanatory,
+for hour of the day six time periods have been assigned for further analysis.
+
 ```{r}
-trans_for_ar <- 
-  trans %>% 
-  inner_join(day_of_week, by = c("order_dow" = "day_id"), keep=FALSE) %>%
-  inner_join(reordered_df, by = c("reordered" = "reordered_id"), keep=FALSE) %>%
-  inner_join(order_hour_of_day, by = c("order_hour_of_day" = "hour_id"), keep=FALSE) %>%
-  inner_join(random_names, by = c("user_id"= "user_id")) %>% 
+trans_for_ar <-
+  trans %>%
+  inner_join(day_of_week, by = c("order_dow" = "day_id")) %>%
+  inner_join(reordered_df, by = c("reordered" = "reordered_id")) %>%
+  inner_join(order_hour_of_day, by = c("order_hour_of_day" = "hour_id")) %>%
+  inner_join(random_names, by = c("user_id"= "user_id")) %>%
   select(-aisle_id, -department_id, -eval_set,
-         -product_id, -order_dow, - reordered, 
-         -order_hour_of_day, -days_since_prior_order, 
-         -order_number, -add_to_cart_order, -user_id) %>% 
+         -product_id, -order_dow, - reordered,
+         -order_hour_of_day, -days_since_prior_order,
+         -order_number, -add_to_cart_order, -user_id) %>%
   arrange(order_id, user_name)
 ```
 
-Since the chosen data set is very large and only a sample of it has been taken 
-into account the column days_since_prior_order does not make a lot of sense since
-as for now not every user has order number 1 associated. Therefore there is 
-a decision to omit this column as well order_number. 
+Transactions are combined in one big dataframe, id columns are removed. Columns
+that are also redundant in terms of analysis is eval_set. Since the chosen 
+data set is very large and only a sample of it has been taken into account the 
+column days_since_prior_order does not make a lot of sense since as for now not 
+every user has order number 1 associated. Therefore there is a decision to omit 
+this column as well order_number.
+
+```{r, echo=FALSE}
+rm(aisles, departments, order_products_train, orders, products, random_names,
+   trans, day_of_week, order_hour_of_day, random_names)
+```
+
 
 ```{r}
 trans <- as(trans_for_ar, "transactions")
@@ -114,6 +150,7 @@ trans_for_viz <- as(trans_for_ar %>% select(product_name, aisle, department), "t
 ```
 
 The final transactional dataframe is made of the following attributes:
+
 * order_id - needed for an unique transaction specification
 * product_name - full product name
 * aisle - aisle name that identifies, where the product belongs inside the store
@@ -121,101 +158,121 @@ The final transactional dataframe is made of the following attributes:
 * dow_name - identifies day of week when order has been made
 * reorder_name - whether the product has been reordered or not
 * time_of_day - artificially created time of the day based on column value specification
-* user_name - random user name assigned for easier identification than original user_id
+* user_name - artificial user name assigned for easier identification than original user_id
 
 # Association rules
 
 ## General view
 
-During transactional data analysis the technique of association rules 
-and mining frequent itemsets plays an  important role for retail basket analysis. 
-This technique is especially useful in mining patterns inside large databases. 
-What is the most frequently used are such statistics as frequent itemsets, 
-maximal frequent itemsets, closed frequent itemsets and association rules. 
+Association rules are often used for reducing number of transactions in the 
+databases where each row is coded by binary attributes. There is no need for 
+them to be trained nor to be labeled beforehand. Most common 
+applications are found in the market basket analysis, discovering interesting patterns of 
+DNA and protein sequences, common patterns of behavior can be found for 
+customers that proceed customers dropping their cell phone operator.
+
+During transactional data analysis the technique of association rules
+and mining frequent itemsets plays an  important role for retail basket analysis.
+This technique is especially useful in mining patterns inside large databases.
+What is the most frequently used are such statistics as frequent itemsets,
+maximal frequent itemsets, closed frequent itemsets and association rules.
 
 Definition:
-Let I = {i1, i2, ..., in} be a set of n binary attributes called items. 
-Let D = {t1, t2, ..., tn} be a set of transactions called database. Each 
+Let I = {i1, i2, ..., in} be a set of n binary attributes called items.
+Let D = {t1, t2, ..., tn} be a set of transactions called database. Each
 transaction in D has a unique transaction ID and contains a subset of the items
-in I. The sets of items X and Y are called antecedent and consequent of the rule.
+in I. The sets of items X and Y are called antecedent and consequent of the rule .
 
-The support(X) is defined as the count of transactions that contains item X to 
-the number of transactions in the whole data set. 
+The support(X) is defined as the count of transactions that contains item X to
+the number of transactions in the whole data set.
 
-The confidence of a rule is defined as conf(X => Y) = supp(X u Y)/supp(X). 
+The confidence of a rule is defined as conf(X => Y) = supp(X u Y)/supp(X).
 
 Another practical measure used for adressing issue of finding too many constraints
 is measure called lift, whihc is defined as lift(X => Y)=supp(X u Y)/(supp(X)supp(Y)).
 The most common interpretation is following, it can be interpreted as the deviation
-of the support of the whole rule from the support expected under independence 
-given the supports of the LHS and the RHS. 
+of the support of the whole rule from the support expected under independence
+given the supports of the LHS and the RHS [@JSSv014i15].
 
 ## Associations mining
 
-In order to investigate the nature of the dataset the read.transactions 
-function has been used. 
+In order to investigate the nature of the dataset the read.transactions
+function has been used. Transformations lead to creating transactional matrix
+with 565097 rows and 132889 columns. Most frequent items are not surprisingly
+binary feature and transaction identificator which is order_id.
+There are no missing values inside the database.
+
+## Rules found in the dataset
 
 ```{r}
-summary(trans)
+kableRules <- function(rules, sortable){
+  rules.sorted<-sort(rules, by=sortable, decreasing=TRUE)
+  rules.sorted.df <- as(head(rules.sorted), "data.frame")
+  rownames(rules.sorted.df) <- NULL
+  rules.sorted.df %>% 
+    as_tibble() %>% 
+    mutate(across(.cols = c(support, confidence, coverage, lift, count), 
+                  ~round(., 4))) %>%
+    kable()
+}
 ```
 
 ```{r}
-length(trans)
+rules.trans<-apriori(trans, parameter=list(supp=0.1, conf=0.5),
+                     control=list(verbose=FALSE))
+```
+
+Mined rules are specified with two threshold, with minima support 0.1 
+and minimal confidence 0.5.
+
+```{r}
+kableRules(rules, "confidence")
+```
+
+All the listed items have confidence above 10.
+
+```{r}
+kableRules(rules, "lift")
+```
+
+Regarding lift we can 
+
+```{r}
+kableRules(rules, "count")
 ```
 
 ```{r}
-size(trans)
+kableRules(rules, "support")
 ```
 
-## 
+# Questions
 
-```{r}
-# creating the rules - standard settings
-rules.trans<-apriori(trans, parameter=list(supp=0.1, conf=0.5))
+## Question 1
 
-# sorting rules by confidence + displaying
-rules.by.conf<-sort(rules.trans, by="confidence", decreasing=TRUE)
-inspect(head(rules.by.conf))
-
-rules.by.lift<-sort(rules.trans, by="lift", decreasing=TRUE) # sorting by lift
-inspect(head(rules.by.lift))
-
-rules.by.count<- sort(rules.trans, by="count", decreasing=TRUE) # sorting by count
-inspect(head(rules.by.count))
-
-rules.by.supp<-sort(rules.trans, by="support", decreasing=TRUE) 
-inspect(head(rules.by.supp))
-```
-
-### Questions
-
-## What is the profile of transactions that are being made during Senior hours?
-
-```{r}
-rules.Senior.hours<-apriori(data=trans, 
-                               parameter=list(supp=0.001, conf=0.08), 
-                               appearance=list(default="lhs", rhs= "time_of_day=Senior hours"), control=list(verbose=F))
-
-rules.Senior.hours.byconf<-sort(rules.Senior.hours, by="confidence", decreasing=TRUE)
-inspect(head(rules.Senior.hours.byconf))
-```
-
-
-Ones may want to figure out what an empty bracker on the lhs means. As documentation 
-claims this rule means that no matter what other items are involved the item 
-in the rhs will be chosen with the level of confidence which is equal to support.
-
-
-## What is the profile of transactions that are being made during Senior hours?
+**What is the profile of transactions that are being made during Senior hours?**
 
 ```{r}
 rules.Senior.hours<-apriori(data=trans,
                             parameter=list(supp=0.001, conf=0.08),
-                            appearance=list(default="lhs", rhs= "time_of_day=Senior hours"), 
+                            appearance=list(default="lhs", rhs= "time_of_day=Senior hours"),
                             control=list(verbose=F))
+kableRules(rules.Senior.hours, "confidence")
+```
 
-rules.Senior.hours.byconf<-sort(rules.Senior.hours, by="confidence", decreasing=TRUE)
-inspect(head(rules.Senior.hours.byconf))
+Ones may want to figure out what an empty bracker on the lhs means. As documentation
+claims this rule means that no matter what other items are involved the item
+in the rhs will be chosen with the level of confidence which is equal to support.
+
+## Question 2
+
+**What is the profile of transactions that are being made during Senior hours?**
+
+```{r}
+rules.Senior.hours<-apriori(data=trans,
+                            parameter=list(supp=0.001, conf=0.08),
+                            appearance=list(default="lhs", rhs= "time_of_day=Senior hours"),
+                            control=list(verbose=F))
+kableRules(rules.Senior.hours, "lift")
 ```
 
 We can clearly see that there is no difference for senior hours with ordering by
@@ -226,128 +283,107 @@ which might suggest that these hours are often used by people with some serious 
 Let's try now to check what is the profile of these two categories based on hours.
 
 ```{r}
-rules.muscles.joints.pain.relief<-apriori(data=trans, 
-                                          parameter=list(supp=0.0001, conf=0.000001), 
-                                          appearance=list(default="lhs", rhs= "aisle=muscles joints pain relief"),
+rules.muscles.joints.pain.relief<-apriori(data=trans,
+                                          parameter=list(supp=0.0001, conf=0.000001),
+                                          appearance=list(default="lhs",
+                                                          rhs= "aisle=muscles joints pain relief"),
                                           control=list(verbose=F))
-
-rules.muscles.joints.pain.relief.bycoverage<-sort(rules.muscles.joints.pain.relief, 
-                                                  by="coverage", 
-                                                  decreasing=TRUE)
-inspect(head(rules.muscles.joints.pain.relief.bycoverage))
+kableRules(rules.muscles.joints.pain.relief, "coverage")
 ```
 
 As we can see senior hours are place in the sixts position but still coverage is very low.
 For other metrics label that indicates these particular hoours has not been
 placed in the top of the resulting table.
 
-# How the Friday mood affects shoppings?
+## Question 3
+
+**How the Friday mood affects shoppings?**
 
 ```{r}
-rules.friday<-apriori(data=trans, 
-                               parameter=list(supp=0.0001, conf=0.000001), 
-                               appearance=list(default="lhs", rhs= "dow_name=Friday"), 
-                                control=list(verbose=F))
-
-rules.friday.byconfidence<-sort(rules.friday, by="confidence", decreasing=TRUE)
-inspect(head(rules.friday.byconfidence))
+rules.friday<-apriori(data=trans,
+                      parameter=list(supp=0.0001, conf=0.000001),
+                      appearance=list(default="lhs", rhs= "dow_name=Friday"),
+                      control=list(verbose=F))
+kableRules(rules.friday, "confidence")
 ```
 
-Alcohol is definitely placed very high, any sort of of it occurs in all of the 
-top results. Once they add alcohol to the cart they do not reorder it. 
-What might be interesting is that people usually buy alcohol 
-in the morning. It might be simply because most of the customers on Friday 
+Alcohol is definitely placed very high, any sort of of it occurs in all of the
+top results. Once they add alcohol to the cart they do not reorder it.
+What might be interesting is that people usually buy alcohol
+in the morning. It might be simply because most of the customers on Friday
 do shopping in the morning in order to have more free time during the proper
-weekend. 
+weekend.
 
 ```{r}
-trans_for_ar %>% 
-  group_by(dow_name, time_of_day) %>% 
-  count() %>% 
-  ungroup() %>% 
-  group_by(dow_name) %>% 
+trans_for_ar %>%
+  group_by(dow_name, time_of_day) %>%
+  count() %>%
+  ungroup() %>%
+  group_by(dow_name) %>%
   mutate(perc = n/sum(n))
 ```
 
 The results shows that most of the purchases are being made on Friday afternoon.
 That is interesting why people buy alcohol in the morning rather than in the afternoon.
 What might also be absorbing is that people do not choose any salty food in
-addition to the alcoholic drinks. 
+addition to the alcoholic drinks.
 
 ```{r}
-rules.lunch.meat<-apriori(data=trans, 
-                               parameter=list(supp=0.0001, conf=0.000001), 
-                               appearance=list(default="lhs", rhs= "aisle=lunch meat"), 
+rules.lunch.meat<-apriori(data=trans,
+                               parameter=list(supp=0.0001, conf=0.000001),
+                               appearance=list(default="lhs", rhs= "aisle=lunch meat"),
                                 control=list(verbose=F))
-
-rules.lunch.meat.byconfidence<-sort(rules.lunch.meat, by="confidence", decreasing=TRUE)
-inspect(head(rules.lunch.meat.byconfidence))
+kableRules(rules.lunch.meat, "confidence")
 ```
 
-```{r}
-rules.lunch.meat<-apriori(data=trans, 
-                               parameter=list(supp=0.0001, conf=0.000001), 
-                               appearance=list(default="lhs", rhs= "aisle=lunch meat"), 
-                                control=list(verbose=F))
+## Question 4
 
-rules.lunch.meat.byconfidence<-sort(rules.lunch.meat, by="confidence", decreasing=TRUE)
-inspect(head(rules.lunch.meat.byconfidence))
-```
-
-Let's investigate particular weekdays in terms of some association  metrics.
+**Investigate weekdays in terms of some association  metrics.**
 
 ```{r}
 rules <- apriori(trans, parameter=list(supp=0.001, conf=0.001))
 rules.dow.tod <- subset(rules, subset = lhs %pin% "dow_name=" & rhs %pin% "time_of_day=")
-rules.dow.tod.by.conf <- sort(rules.dow.tod, by = "confidence", decreasing=TRUE)
-inspect(head(rules.dow.tod.by.conf))
+kableRules(rules.dow.tod, "confidence")
 ```
 
 In terms of first row of rules sorted by confidence 5.8 % of transactions
-containing during Night has been made on Thursday. Discussing lift it 
+containing during Night has been made on Thursday. Discussing lift it
 also indicates that the strongest association is between Thursday and Night.
 
 ```{r}
 rules <- apriori(trans, parameter=list(supp=0.001, conf=0.001))
 rules.tod.dow <- subset(rules, subset = lhs %pin% "time_of_day=" & rhs %pin% "dow_name=")
-rules.tod.dow.by.count <- sort(rules.tod.dow, by = "count", decreasing=TRUE)
-inspect(head(rules.tod.dow.by.count))
+kableRules(rules.tod.dow, "count")
 ```
 
-Most of the transactions found in dataset is on Monday Afternoon. 
+Most of the transactions found in dataset is on Monday Afternoon.
+
+# Visualization techniques
+
+## Hierarchical clustering
 
 ```{r}
-rules <- apriori(trans, parameter=list(supp=0.001, conf=0.001))
-rules.tod.dow <- subset(rules, subset = lhs %pin% "time_of_day=" & rhs %pin% "dow_name=")
-rules.tod.dow.by.count <- sort(rules.tod.dow, by = "count", decreasing=TRUE)
-inspect(head(rules.tod.dow.by.count))
-```
-
-```{r}
-trans.sel <-trans[,itemFrequency(trans)>0.05] # selected transations
+trans.sel <-trans_for_viz[,itemFrequency(trans_for_viz)>0.05] # selected transations
 d.jac.i<-dissimilarity(trans.sel, which="items") # Jaccard as default
-```
-
-```{r}
 plot(hclust(d.jac.i, method="ward.D2"), main="Dendrogram for items")
 ```
 
-The interpretation of the hclust graph is following if we keep three biggest 
+The interpretation of the hclust graph is following if we keep three biggest
 clusters:
 * the first group of transactions is formed out of fresh vegetables and fresh fruits
 which do belong to produce department,
 * the second group contains transactions made between 12 and 18,
-* last but not least we have third cluster that can be best described as 
-mostly snacks and beverages which are bought either at night or between 
+* last but not least we have third cluster that can be best described as
+mostly snacks and beverages which are bought either at night or between
 10 and 12.
 
 ```{r}
 itemFrequencyPlot(trans_for_viz, topN=10, type="absolute", main="Item Frequency")
 ```
 
-In terms of items frequency it is shown that most of the record has been added 
+In terms of items frequency it is shown that most of the record has been added
 in the afternoon. Customers also focus on keeping in shape since a lot of
-transactions are made inside produce department, others in dairy eggs. 
+transactions are made inside produce department, others in dairy eggs.
 
 ```{r}
 rules_for_viz <- apriori(trans_for_viz, parameter = list(support = 0.001))
@@ -358,17 +394,19 @@ plot(rules_for_viz, method = "group")
 plot(head(rules_for_viz, 30, by = "lift"), method = "paracoord", reorder =TRUE)
 ```
 
-Figure above shows rules with arrows where the width of arrows is linked to support 
-and the color confidence contains information about confidence of given rule. 
-The values of each dimension are connected with each other via line. The y-axis 
+Figure above shows rules with arrows where the width of arrows is linked to support
+and the color confidence contains information about confidence of given rule.
+The values of each dimension are connected with each other via line. The y-axis
 is formed via nominal values and the x-axis presents the position in the rule.
 
 # Conclusion
 
 Association rules are very useful technique for mining patterns in large datasets
 due to their algorithms. What is more it can save a lot of time in finding user
-preferences and what drives their choices. Most of the useful functionalities 
+preferences and what drives their choices. Most of the useful functionalities
 are implemented either in a form of graphs or association rules mining functionalities.
-For latter arulesViz is widely used where a lot of brand new visualization techniques to 
+For latter arulesViz is widely used where a lot of brand new visualization techniques to
 research association rules has been implemented. The main features of arules in terms
 of association rules are efficient implementation with sparse matrices usage.
+
+# Bibliography

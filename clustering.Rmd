@@ -1,13 +1,11 @@
 ---
-title: "International Economics dataset, clustering and dimensionality reduction"
+title: "Measuring similarities between polish economy and politics across years. Clustering of International Political Economy dataset."
 output:
   html_document:
     toc: true
-    toc_float:
-      collapsed: false
-      smooth_scroll: false
+    toc_float: true
 author: "Mateusz Baryła"
-date: "6 12 2020"
+date: "05 02 2021"
 bibliography: bibliography.bibtex
 ---
 
@@ -17,45 +15,38 @@ knitr::opts_chunk$set(echo = TRUE,
 pacman::p_load(tidyverse, kableExtra, tidyverse, cluster, factoextra, dendextend,
                summarytools, stats, flexclust, fpc, clustertend, ClusterR, clValid,
                mclust, kohonen)
-
-st_options(plain.ascii = FALSE,        # Always use this option in Rmd documents
-           style        = "rmarkdown", # Always use this option in Rmd documents
-           footnote     = NA,          # Makes html-rendered results more concise
-           subtitle.emphasis = FALSE)  # Improves layout with some rmardown themes
+options(warn=-1)
+st_options(plain.ascii = FALSE,
+           style        = "rmarkdown",
+           footnote     = NA,
+           subtitle.emphasis = FALSE)
 ```
 
-## Introduction
+# Introduction
 
-Clustering in an unsupervised learning technique that uses machine learning 
-algorithms to assign similar data to groups. Mostly it is used for knowledge 
-discovery of hidden patterns found within data. The main idea is to cluster 
-similar observations that they are grouped together. The more diverse groups
-the better. In an ideal world, the results obtained from clustering should not only have good statistical properties (compact, well-separated, connected and stable), but also yield output that is relevant in terms of processed data.
+Definition denotes International Political Economy as field 
+that focus on a particular range of questions and a series of assumptions 
+about the nature of the international system and how it is understood. 
+Critical part of it concentrate on a set of questions.
+Four main aspects of it concentrate on: politics, economics, 
+international politics and international economics. 
+International Political Economy is apparently linked to foreign policy
+that impact of IPE is difficult to assess [@10.2307/2623442].
 
-## Dataset
+# Dataset preprocessing
 
-### International Politcal Economy
+## The nature of the dataset
 
-International Political Economy is a discipline that discusses economics, politics
-and international relations. The main areas of economics that are covered by IPE 
-are the following fields of macroeconomics, international business, international 
-development and development economics. 
-
-### The nature of the dataset
-
-In order to provide master dataset that can be used by researchers from
+In order to provide master dataset [@DVN/X093TV_2016] that can be used by researchers from
 international political economy 89 data resources have been merged. Observations
 are identified by country-year the unit of analysis. Countries are identified by 
-Gleditsch-Ward number ot in an alternative version by Correlates of War (COW).
+Gleditsch-Ward number in an alternative version by Correlates of War (COW).
 Most of the dataset components begin after Second World War. 
-
-### Variable naming
-
 Each of 89 dataset has been given a unique suffix that uniquely identifies it.
 
-## Dataset preprocessing
+## Preprocessing
 
-Firstly data is loaded, then we convert it to tibble as tidyverse will be 
+Firstly data is loaded, then it is converted to tibble as tidyverse will be 
 mainly used in this project.
 
 ```{r}
@@ -69,21 +60,21 @@ Dimensions of the dataset needs to be investigated as well.
 ipe_v4 %>% dim()
 ```
 
-
 Master table consists of 25850 rows and 1043 variables. Each of them is described 
 in the codebook provided by library maintainers. They are divided into following 
 groups:
+
 * economic
 * political
 * social and cultural
 * geographic 
 * other (e.g. infrastructure, military)
 
-Very good quality of the data is provided by Varities of Democracy Dataset (VDEM)
+Very good quality of the data is provided by Varieties of Democracy Dataset (VDEM)
 inside political section, it will definitely be included not only because of 
-the quality but also its popularity and inside class recommendation. 
+it but also its popularity and recommendation during classes.
 
-The other  dataset chosen by me is going to be "Polity IV Democracy".
+The other dataset chosen by me is going to be "Polity IV Democracy".
 
 ```{r}
 pol_ds <- 
@@ -94,43 +85,43 @@ pol_ds <-
          -c(change_P4, sf_P4, fragment_P4, regtrans_P4, countryname_raw_P4, 
             v2x_hosinter_VDEM, v2x_suffr_VDEM, v2elsrgel_VDEM, v2elreggov_VDEM,
             v2xlg_leginter_VDEM, v2x_elecreg_VDEM, v2xlg_elecreg_VDEM)) 
-pol_ds %>%
-  head() %>% 
-  kable()
 ```
 
-## Exploratory data analysis
-
-In every modeling process we should perform exploratory data analysis before moving to 
-the next points. 
 
 ```{r}
 dfSummary(pol_ds, plain.ascii = FALSE, style = "grid", 
           graph.magnif = 0.75, valid.col = FALSE, tmp.img.dir = "/tmp")
 ```
 
-Thanks to the broad landscape of autoEDA packages we can very easily generate 
+In every modeling process we should perform exploratory data analysis before moving to 
+the next points. Thanks to the broad landscape of autoEDA packages [@Staniak_2019] we can very easily generate 
 some intuition towards the analyzed data. The chosen subset of data is associated 
 with brilliant starting point for analysis having only two columns,
 v2x_gender_VDEM and v2x_genpp_VDEM, with missing value. The graphs show distribution
 for each variable. The year column shows that there is no data between years 1939-1948.
 Most of the variables there are so called indexes with range between 0 and 1.
 For P4 varialbes the minimum value can be lower than zero. Durable_P4 variable is 
-highly skewed. For v2xcl_rol_VDEM we can clearly see oposite pattern, however  
-there is a misssing range of numbers for which we have little to no observations. 
+highly skewed. For v2xcl_rol_VDEM we can clearly see opposite pattern, however 
+there is a missing range of numbers for which we have little to no observations. 
 
-## Clustering
+# Clustering
 
-### Clusterability of the dataset
+Clustering in an unsupervised learning technique that uses machine learning 
+algorithms to assign similar data to groups. Mostly it is used for knowledge 
+discovery of hidden patterns found within data. The main idea is to cluster 
+similar observations that they are grouped together. The more diverse groups
+the better. In an ideal world, the results obtained from clustering should not 
+only have good statistical properties (compact, well-separated, connected and 
+stable), but also yield output that is relevant in terms of processed data.
 
-There is a need to scale data before an further analysis and fill NAs with chosen 
-technique. 
+## Clusterability of the dataset
+
+There is a need to scale data before a further analysis. What is more NAs should 
+be filled with chosen technique. 
 
 ```{r}
 pol_ds_scaled <- pol_ds %>% fill(v2x_gender_VDEM, v2x_genpp_VDEM) %>% scale %>% as_tibble()
 ```
-
-# Test for clusterability of data
 
 First step that this analysis will cover is the clusterability of the dataset.
 Agnes function provides the data scientist with the agglomerative coefficient 
@@ -166,6 +157,7 @@ as square root of (n/2) where n is denoted as optimal number of clusters.
 ```{r}
 sqrt((pol_ds_scaled %>% nrow()) / 2)
 ```
+
 Now we are coming back to elbow method in order to investigate optimal 
 number of clusters.
 
@@ -174,10 +166,15 @@ opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, plot_clusters = T
 ```
 
 Elbow method and showed within-group heterogeneity shows that 6 clusters is
-appropriate number of clusters.
+appropriate number of clusters, others may argue that 3 is the starting 
+point of the linear trend decrease.
 
 ```{r}
-opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, 'euclidean', plot_clusters = TRUE, criterion = 'silhouette')
+opt <- Optimal_Clusters_KMeans(pol_ds_scaled, 
+                               max_clusters=10, 
+                               'euclidean', 
+                               plot_clusters = TRUE, 
+                               criterion = 'silhouette')
 ```
 
 The other method uses silhouette index to find optimal number of clusters which 
@@ -185,28 +182,45 @@ shows the maximum value for 2 clusters and lowest for 6. Measure method takes
 into account what is the difference between points that belong to the same 
 cluster and what is the difference between different clusters. 
 
-Methods presented above are not very formalized due to their graphical way of presenting results. One way to address this drawback is a statistical procedure called 'gap' statistics. The concept is based on the graph of log(W_k) by making comparison with its expectation under an appropriate null reference distribution of the data. For latter one appropriate reference distribution need to be found in the data. Then the estimation of the optimal number of clusters is the value of k for which log(W_k) falls the farthest below this reference curve. One of the assumption of this algorithm is to have data that can be separated well.
+Methods presented above are not very formalized due to their graphical way 
+of presenting results. One way to address this drawback is a statistical 
+procedure called gap statistics [@gap_Statistics]. The concept is based on the 
+graph of log(W_k) by making comparison with its expectation under an appropriate
+null reference distribution of the data. For latter one appropriate reference distribution 
+need to be found in the data. Then the estimation of the optimal number of 
+clusters is the value of k for which log(W_k) falls the farthest below this 
+reference curve. One of the assumption of this algorithm is to have data 
+that can be separated well.
 
-```{r}
-clusGap(pol_ds_scaled, FUN = kmeans, nstart = 20, K.max = 20, B = 60)
-
+```{r, echo = FALSE}
+kable_head <- function(df){
+  df %>% kable() %>% head()
+}
 ```
 
-Number of clusters proposed by this sophisticated method is equal to 13. Mainly due to its advanced methodology this number has been chosen in further analysis.
+
+```{r}
+clusGapRes <- clusGap(pol_ds_scaled, FUN = kmeans, nstart = 20, K.max = 20, B = 60)
+```
+
+Number of clusters proposed by this sophisticated method is equal to 13 which is 
+presented by "Number of clusters (method 'firstSEmax', SE.factor=1): 13". Mainly 
+due to its advanced methodology this number has been chosen in further analysis.
 
 ```{r}
 chosen_size <- 13
 ```
 
-# Typical clustering algorithms based on partition
-
 Clustering based on partition assumes that cluster center is to regard the 
-center of data points. Main pros of these kind of algorithms are their time complexity,
-and their ability to compute results very well in general. In terms of drawbacks 
-we can list following points: these algorithms do not work well with convex data,
-they are sort of sensitive to the outliers, they can be stuck in the local 
-optimal, what is more we must specify the number of clusters before the process
-which is essentially very sensitive to the number of clusters.
+center of data points. Main pros of these kind of algorithms are their time 
+complexity and their ability to compute results very well in general. In terms of 
+drawbacks we can list following points: 
+
+* do not work well with convex data,
+* are sensitive to the outliers, 
+* can be stuck in the local optimal,  
+* the number of clusters before the process must be specified
+* it is essentially very sensitive to the number of clusters.
 
 ## K-means
 
@@ -227,13 +241,7 @@ deal with discrete data points, as the representative of the corresponding clust
 
 ```{r}
 pol_clusters <- kmeans(pol_ds_scaled %>% as.matrix(), chosen_size)
-pol_ds$cluster_kmeans <- pol_clusters$cluster
-```
-
-After assigning we can easily show counts per cluster. 
-
-```{r}
-pol_ds %>% group_by(cluster_kmeans) %>% count()
+pol_ds$kmeans <- pol_clusters$cluster
 ```
 
 ### Evaluation indicators
@@ -248,33 +256,27 @@ The 87.46361 is the total variance in the data that is explained by the clusteri
 Thanks to clustering the algorithm is able to reduce sum of squares to 87.4631%.
 
 ```{r}
-sil <- silhouette(x = pol_ds$cluster_kmeans, dist(pol_ds_scaled))
+sil <- silhouette(x = pol_ds$kmeans, dist(pol_ds_scaled))
 fviz_silhouette(sil)
 ```
-
-Having discussed mostly known methods other types of cluster validation can be discussed as well such as "internal" "stability" from clValid package. For internal measures selected measures are defined the compactness, connectedness,
-and separation of the cluster partitions. Connectedness is evaluated depending on the number of the nearest points that are assigned to the same cluster. Compactness relates to inner cluster homogeneity, very often being measured by looking at the intra-cluster variance. Distance between cluster centroids is often being measured when separation evaluation is presented. The non-linear combination of the compactness and separation is described by the Dunn index and silhouette width. Stability is evaluated in terms of consistency of a clustering by comparing it with the clusters obtained after each column is removed, one at a time. 
 
 ## PAM
 
 ### Definition of PAM
 
-PAM focuses on object that are centrally located in a cluster. The procedure chooses set of medoids and iteratively replace one of the medoids with one of the non-medoids and check if it improves the total distance of the resulting clustering. The algorithm stops when there is no further change.
+PAM focuses on object that are centrally located in a cluster. The procedure 
+chooses set of medoids and iteratively replace one of the medoids with one 
+of the non-medoids and check if it improves the total distance of the 
+resulting clustering. The algorithm stops when there is no further change.
 
 ### Clustering
 
 ```{r}
 c1<-pam(pol_ds_scaled, chosen_size)
-pol_ds$cluster_pam <- c1$clustering
+pol_ds$pam <- c1$clustering
 ```
 
 After assigning we can easily show counts per cluster. 
-
-```{r}
-pol_ds %>% group_by(cluster_pam) %>% count()
-```
-
-### Evaluation indicators
 
 ## CLARA
 
@@ -286,16 +288,10 @@ CLARA draws multiple samples of the dataset and then applies PAM on each sample.
 
 ```{r}
 clara_flex <- eclust(pol_ds_scaled %>% as.matrix(), "clara", k=chosen_size) 
-pol_ds$cluster_clara <- clara_flex$clustering
+pol_ds$clara <- clara_flex$clustering
 ```
 
 After assigning we can easily show counts per cluster. 
-
-```{r}
-pol_ds %>% group_by(cluster_clara) %>% count()
-```
-
-### Evaluation indicators
 
 ```{r}
 fviz_cluster(clara_flex, geom="point", ellipse.type="norm") 
@@ -331,21 +327,17 @@ sub_grp <- cutree(hc5, k = chosen_size)
 
 pol_ds <- 
   pol_ds %>%
-  mutate(cluster_hier_ward_D2 = sub_grp) 
+  mutate(hier_ward_D2 = sub_grp) 
 
-pol_ds %>%
-  group_by(cluster_hier_ward_D2) %>% 
-  count()
 ```
 
 
 ```{r}
-fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds$cluster_hier_ward_D2))
+fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds$hier_ward_D2))
 ```
 
-### Evaluation indicators
 
-# Some of other clustering methods
+# Some of the other clustering methods
 
 ## Divisive clustering
 
@@ -356,37 +348,28 @@ sub_grp <- cutree(hc4, k = chosen_size)
 
 pol_ds <- 
   pol_ds %>%
-  mutate(cluster_hier_diana = sub_grp) 
+  mutate(hier_diana = sub_grp) 
 
-pol_ds %>%
-  group_by(cluster_hier_diana) %>% 
-  count()
 ```
 
 In order to perform hierarchical clustering euclidean distance is calculated first
 then we cut the dendogram tree at k = 6. The chosen method is Ward's method 
 which is usually fine by default. 
 
-```{r}
-d_pol_ds <- dist(pol_ds_scaled, method = "euclidean")
-hc5 <- hclust(d_pol_ds, method = "ward.D2" )
-sub_grp <- cutree(hc5, k = chosen_size)
+## Evaluation indicators
 
-pol_ds <- 
-  pol_ds %>%
-  mutate(cluster_hier_wardD2 = sub_grp) 
-
-pol_ds %>%
-  group_by(cluster_hier_wardD2) %>% 
-  count()
-```
-
-
-```{r}
-fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds$cluster_hier_wardD2))
-```
-
-### Evaluation indicators
+Having discussed mostly known methods other types of cluster validation can be 
+discussed as well such as "internal" "stability" from clValid package [@JSSv025i04]. 
+For internal measures selected measures are defined the compactness, connectedness,
+and separation of the cluster partitions. Connectedness is evaluated depending 
+on the number of the nearest points that are assigned to the same cluster. 
+Compactness relates to inner cluster homogeneity, very often being measured by 
+looking at the intra-cluster variance. Distance between cluster centroids is 
+often being measured when separation evaluation is presented. The non-linear 
+combination of the compactness and separation is described by the Dunn index 
+and silhouette width. Stability is evaluated in terms of consistency of a 
+clustering by comparing it with the clusters obtained after each 
+column is removed, one at a time. 
 
 ```{r}
 intern <- clValid(pol_ds_scaled %>% as.matrix(), 
@@ -396,52 +379,69 @@ intern <- clValid(pol_ds_scaled %>% as.matrix(),
                       "clara", "model"), 
                   validation = "internal"
                   )
-summary(intern)
+intern@measures %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = everything()) %>% 
+  separate(name, into = c("number", "model_name"), sep="[.]") %>% 
+  select(model_name, value) %>% 
+  mutate( measure_id = 0:20 %/% 7) %>% 
+  inner_join(tibble(measure_id = 0:2, measure_name = c("Connectivity", "Dunn", "Silhouette"))) %>%
+  select(-measure_id) %>% 
+  pivot_wider(names_from = measure_name, values_from = value) %>% 
+  kable_head()
 ```
 
 The highest connectivity is associated with PAM, CLARA and model clustering 
 algorithms. It should be minimized so taking into account this technique 
 the best algorithm is diana. Silhouette value is smallest for model based 
-and the maximum for diana algorithm. Based on this data we can assume that 
-based clustering winner algorithm is diana. 
+and the maximum for diana algorithm. Based on this data we can assume diana as 
+the best algorithm.
 
 ## Choosing appropriate names for clusters
 
 Based on per cluster results we can try to name formed clusters based on these 
-values in terms of international economy
+values in terms of international economy.
 
 ```{r}
 pol_ds_long <- 
   pol_ds %>% 
-  select(-year, -cluster_kmeans, -cluster_pam,
-  -cluster_clara, -cluster_hier_ward_D2, -cluster_hier_wardD2) %>% 
-  select(starts_with("v2x_"), cluster_hier_diana) %>% 
-  pivot_longer(cols = c(-cluster_hier_diana))
+  select(-year, -kmeans, -pam,
+  -clara, -hier_ward_D2) %>% 
+  select(starts_with("v2x_"), hier_diana) %>% 
+  pivot_longer(cols = c(-hier_diana))
  
 pol_ds_long %>% 
-  ggplot(aes(x = factor(cluster_hier_diana), 
+  ggplot(aes(x = factor(hier_diana), 
              y = value, 
-             fill= factor(cluster_hier_diana))) +
+             fill= factor(hier_diana))) +
   geom_boxplot() +
-  facet_wrap(~name, ncol = 5, shrink = FALSE, scales = "free") +
+  facet_wrap(~name, ncol = 3, shrink = FALSE, scales = "free") +
   labs(title = 'Boxplots per variable per cluster') +
   xlab("Cluster") + 
   ylab("Value") +
   theme(legend.position = "none")
 ```
+
+Describing clusters with so many variables might be complicated, the
+first insight that is very easily visible is that *cluster 9* has 
+the highest IQR across most of the dimensions. Clusters between 9 
+and 13 are very similar to each other which might suggest that 13 
+clusters might sort of overfit the data. 
+
+1. First cluster 
 
 ```{r}
 pol_ds_long <-
     pol_ds %>% 
-    select(-year, -cluster_kmeans, -cluster_pam,
-           -cluster_clara, -cluster_hier_ward_D2, -cluster_hier_wardD2) %>% 
-    select(-contains("v2"), cluster_hier_diana) %>%
-    pivot_longer(cols = c(-cluster_hier_diana))
+    select(-year, -kmeans, -pam,
+           -clara, -hier_ward_D2) %>% 
+    select(-contains("v2"), hier_diana) %>% 
+    pivot_longer(cols = c(-hier_diana))
  
 pol_ds_long %>% 
-  ggplot(aes(x = factor(cluster_hier_diana), 
+  ggplot(aes(x = factor(hier_diana), 
              y = value, 
-             fill= factor(cluster_hier_diana))) +
+             fill= factor(hier_diana))) +
   geom_boxplot() +
   facet_wrap(~name, ncol = 5, shrink = FALSE, scales = "free") +
   labs(title = 'Boxplots per variable per cluster') +
@@ -450,7 +450,9 @@ pol_ds_long %>%
   theme(legend.position = "none")
 ```
 
-# Some other clustering methods
+
+
+# Some of the other clustering methods
 
 ## Gaussian mixture models
 
@@ -498,11 +500,11 @@ corrplot(pol_ds_scaled_cor, order ="alphabet", tl.cex=0.6)
 
 Although there a lot of variables on the plot we can clearly see that a lot of variables are correlated either negatively or positively. 
 
-# MDS reduction
+## MDS reduction
 
 As our data relates to social sciences we can definitely start with multidimensional scaling. Starting with definition, this is a nonlinear statistical technique originated in psychometrics. MDS keeps the distance between the points and reduces number of dimensions. Distances allow to preserve pattern and clusters. The metrics used in this methods, called proximity, describes there is a number that indicates how similar two objects are or are perceived to be. 
 
-## Classification of multidimensional scaling models
+## Classification of MDS
 
 In order to describe scaling models they can be broadly classified into metric vs non-metric and strain (classical scaling) vs stress (distance scaling) based MDS models. 
 
@@ -522,15 +524,7 @@ ratio, interval, oridinal and mspline.
 
 ```{r}
 dis2<-sim2diss(pol_ds_scaled_cor, method=1, to.dist=TRUE)
-fit.data<-mds(dis2, ndim=2,  type="ratio") # from smacof::
-fit.data
-summary(fit.data)
-plot(fit.data)
-```
-
-We can also plot PCA with impact per observation for stress function. 
-
-```{r}
+fit.data<-mds(dis2, ndim=2,  type="ratio") 
 plot(fit.data, pch=21, cex=as.numeric(fit.data$spp), bg="red")
 ```
 
@@ -559,10 +553,7 @@ Smallest value is yield by ordinal method which is non-metric MDS type where onl
 ## Principal Component Analysis
 
 ```{r}
-xxx.pca1<-prcomp(pol_ds_scaled, center=FALSE, scale.=FALSE) # stats::
-xxx.pca1
-xxx.pca1$rotation
-summary(xxx.pca1)
+xxx.pca1<-prcomp(pol_ds_scaled, center=FALSE, scale.=FALSE) 
 ```
 
 For explaining 99% of the variance we need to take only first two Principal
@@ -570,7 +561,6 @@ Components.
 
 ```{r}
 xxx.pca2<-princomp(pol_ds_scaled) # stats::princomp()
-loadings(xxx.pca2)
 plot(xxx.pca2)# the same will be plot(xxx.pca1)
 fviz_pca_var(xxx.pca1, col.var="steelblue")
 ```
@@ -594,17 +584,12 @@ Rotated PCA allows easier interpretation of factors used in analysis due to the 
 
 ```{r}
 xxx.pca4<-principal(pol_ds_scaled, nfactors=2, rotate="varimax")
-xxx.pca4
 ```
 
 ```{r}
 summary(xxx.pca4)
 ```
 
-```{r}
-# printing only the significant loadings
-print(loadings(xxx.pca4), digits=3, cutoff=0.4, sort=TRUE)
-```
 
 ```{r}
 plot(xxx.pca1)
@@ -621,7 +606,7 @@ Complexity corresponds to the number of factor loads that take values greater th
 ```{r}
 set<-data.frame(complex=xxx.pca4$complexity, unique=xxx.pca4$uniqueness)
 set.worst<-set[set$complex>1.8 & set$unique>0.78,]
-set.worst
+set.worst %>% kable_head
 ```
 
 Combining complexity and uniqueness together we can spot variables that may lead to problems. 
@@ -634,4 +619,17 @@ fviz_pca_ind(xxx.pca1, col.ind="cos2", geom="point", gradient.cols=c("white", "#
 fviz_pca_var(xxx.pca1, col.var = "steelblue")
 ```
 
+# Summary
 
+The problem of estimating number of clusters in dataset can be quite hard 
+which then result in yielding unexpected results. Domain experts 
+may claim that 13 clusters in dataset with 89 observations is surprisingly a lot.
+On the other hand the so called gap statistics have been used along with
+cluster validation package that can help with task that are performed 
+without external knowledge. 
+
+The data set collections itself was very useful in understanding problems 
+of International Political Economy. 
+
+
+# Bibliography
