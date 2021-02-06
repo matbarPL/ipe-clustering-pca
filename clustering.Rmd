@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       results = 'asis')
 pacman::p_load(tidyverse, kableExtra, tidyverse, cluster, factoextra, dendextend,
                summarytools, stats, flexclust, fpc, clustertend, ClusterR, clValid,
-               mclust, kohonen)
+               mclust, kohonen, corrplot, maptools, smacof, gridExtra, psych)
 options(warn=-1)
 st_options(plain.ascii = FALSE,
            style        = "rmarkdown",
@@ -345,9 +345,6 @@ pol_ds <-
 fviz_cluster(list(data = pol_ds_scaled, cluster = pol_ds$hier_ward_D2))
 ```
 
-
-# Some of the other clustering methods
-
 ## Divisive clustering
 
 ```{r}
@@ -473,44 +470,40 @@ pol_ds %>%
 
 Short description of each cluster by year and box plots variables:
 
-*1. First cluster: observations that mostly correspond to post-war period.*
+1. **First cluster: observations that mostly correspond to post-war period.**
 Regulation of participation are very low and since it is the heart of 
 democracy, they indicates that there are rules for when and how elections are 
 expressed [@10.1371/journal.pone.0045838].
-*2. Second cluster: political developments in Poland, Piłsudski resigned from office, 
+2. **Second cluster: political developments in Poland, Piłsudski resigned from office, 
 The May Coup resulted in overthrowing President Stanisław Wojciechowski and
-Prime Minister Wincenty Witos who were democratically elected.* What definitely 
+Prime Minister Wincenty Witos who were democratically elected.** What definitely 
 distinguishes this cluster is elected executive index which not essentialy 
 should highly correspond to decision what was the level of democracy, it can rather be used to
 aggregate higher-order indices. It tries to measure whether chief executive
 was elected directly or indirectly. Of course corresponding to the aforementioned 
 events in Poland it is clear that this metric shall be rather low.
-*3. Third cluster: before second World war, new Polish Constitution has been adopted, Piłsudski dies.* What can be not very easily spotted here is the divided party control index.  [@10.2307/419392]
-*4. Fourth cluster: 7 important years for defense minister of Poland, Konstanty Rokossowski.* Women political participation index value has large interquartile range which can
+3. **Third cluster: before second World war, new Polish Constitution has been adopted, Piłsudski dies.** What can be not very easily spotted here is the divided party control index.  [@10.2307/419392]
+4. **Fourth cluster: 7 important years for defense minister of Poland, Konstanty Rokossowski.** Women political participation index value has large interquartile range which can
 arise from Stanilist employment policies that aimed at the equality of sexes [@10.2307/3185730].
-*5. Fifth cluster: year that mainly has been affected in politcs by nearly 50,000 political prisoners that were being held in prison* that is also visible on boxplot 
+5. **Fifth cluster: year that mainly has been affected in politcs by nearly 50,000 political prisoners that were being held in prison** that is also visible on boxplot 
 of Physical violence index, that is very low which indicates that citizens were not really safe.
-*6. Sixth cluster: one of the most heterogeneous cluster in term of years, 4 different decades falls
-into this group of observations.* All dimensions despite the corruption related and regime
-durability
-have very low IQR.
-*7. Seventh cluster: second very heterogeneous cluster,* the highest number number of observations
+6. **Sixth cluster: one of the most heterogeneous cluster in term of years, 4 different decades falls into this group of observations.** All dimensions despite the corruption related and regime durability have very low IQR.
+7. **Seventh cluster: second very heterogeneous cluster** ,the highest number number of observations
 belongs here. Similar to cluster sixth with medians slightly below medians of cluster sixth.
-*8. Eighth cluster: Round Table Talks that lead to political and economical reforms.* Since it 
-is only one observation boxplots does not bring a lot of value here. It can
+8. **Eighth cluster: Round Table Talks that lead to political and economical reforms.** Since it is only one observation boxplots does not bring a lot of value here. It can
 be described as some vertical line that divides polish history into two separate 
 periods which is essentially true.
-*9. Ninth cluster: in 1990 Lech Wałęsa won the presidential election, in 1995 
-Wałęsa demanded Pawlak's resignation in January 1995.* Cluster that has the 
+9. **Ninth cluster: in 1990 Lech Wałęsa won the presidential election, in 1995 
+Wałęsa demanded Pawlak's resignation in January 1995.** Cluster that has the 
 highest IQR across most of the dimensions.
-*10. Tenth cluster: times after Round Table Talks excluding presidential elections.*
+10. **Tenth cluster: times after Round Table Talks excluding presidential elections.**
 Deliberative democracy index has the highest value.
-*11. Eleventh cluster: presidential elections years.* This is the onlu group of observations where the political competition
+11. **Eleventh cluster: presidential elections years.** This is the onlu group of observations where the political competition
 has different values of quartiles.
-*12. Twelfth cluster: Lech Wałęsa and Lech Kaczyński presidency. *We can cearly 
+12. **Twelfth cluster: Lech Wałęsa and Lech Kaczyński presidency. ** We can cearly 
 see that egalitarian component index shows here that the resources inside 
 society has been distributed equally in society.
-*13. Thirteenth cluster: Andrzej Duda presidency and PiS single-party government.*
+13. **Thirteenth cluster: Andrzej Duda presidency and PiS single-party government.**
 Even though women political participation index showed very high values.
 
 
@@ -549,10 +542,6 @@ The most common approach for reducing number of features is the following:
 5. New principal components are variables as constraint of the variables with highest variance.
 6. Develop new features with columns as eigenvectors.
 7. Recast data along new principal axes.
-
-```{r}
-pacman::p_load(corrplot, maptools, smacof, gridExtra, psych)
-```
 
 ## Checking correlations
 ```{r}
