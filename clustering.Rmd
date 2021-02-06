@@ -1,13 +1,16 @@
 ---
-title: "Measuring similarities between polish economy and politics across years. Clustering and dimensionality reduction for International Political Economy dataset."
+title: Measuring similarities between polish economy and politics across years. Clustering
+  and dimensionality reduction for International Political Economy dataset.
+author: "Mateusz Baryła"
+date: "05 02 2021"
 output:
   html_document:
     toc: yes
     toc_float:
       collapsed: yes
       smooth_scroll: no
-author: "Mateusz Baryła"
-date: "05 02 2021"
+  pdf_document:
+    toc: yes
 bibliography: bibliography.bibtex
 ---
 
@@ -26,12 +29,12 @@ st_options(plain.ascii = FALSE,
 
 # Introduction
 
-Definition denotes International Political Economy as field 
-that focus on a particular range of questions and a series of assumptions 
+Definition denotes International Political Economy as the field 
+that focuses on a particular range of questions and a series of assumptions 
 about the nature of the international system and how it is understood. 
-Critical part of it concentrate on a set of questions.
+The critical part of its concentrate on a set of questions.
 Four main aspects of it concentrate on: politics, economics, 
-international politics and international economics. 
+international politics, and international economics. 
 International Political Economy is apparently linked to foreign policy
 that impact of IPE is difficult to assess [@10.2307/2623442].
 
@@ -40,11 +43,11 @@ that impact of IPE is difficult to assess [@10.2307/2623442].
 ## The nature of the dataset
 
 In order to provide master dataset [@DVN/X093TV_2016] that can be used by researchers from
-international political economy 89 data resources have been merged. Observations
+the international political economy 89 data resources have been merged. Observations
 are identified by country-year the unit of analysis. Countries are identified by 
 Gleditsch-Ward number in an alternative version by Correlates of War (COW).
 Most of the dataset components begin after Second World War. 
-Each of 89 dataset has been given a unique suffix that uniquely identifies it.
+Each of 89 datasets has been given a unique suffix that uniquely identifies it.
 
 ## Preprocessing
 
@@ -57,13 +60,13 @@ ipe_mapping <- xlsx::read.xlsx2("data\\ipe_mapping.xlsx", sheetIndex = 1)
 ipe_v4 <- as_tibble(ipe_v4)
 ```
 
-Dimensions of the dataset needs to be investigated as well.
+Dimensions of the dataset need to be investigated as well.
 
 ```{r}
 ipe_v4 %>% dim()
 ```
 
-Master table consists of 25850 rows and 1043 variables. Each of them is described 
+A master table consists of 25850 rows and 1043 variables. Each of them is described 
 in the codebook provided by library maintainers. They are divided into following 
 groups:
 
@@ -75,7 +78,7 @@ groups:
 
 Very good quality of the data is provided by Varieties of Democracy Dataset (VDEM)
 inside political section, it will definitely be included not only because of 
-it but also its popularity and recommendation during classes.
+but also its popularity and recommendation during classes.
 
 The other dataset chosen by me is going to be "Polity IV Democracy".
 
@@ -91,15 +94,15 @@ pol_ds <-
 ```
 
 
-In every modeling process we should perform exploratory data analysis before moving to 
+In every modeling process, we should perform exploratory data analysis before moving to 
 the next points. Thanks to the broad landscape of autoEDA packages [@Staniak_2019] we can very easily generate 
 some intuition towards the analyzed data. The chosen subset of data is associated 
-with brilliant starting point for analysis having only two columns,
-v2x_gender_VDEM and v2x_genpp_VDEM, with missing value. The graphs show distribution
-for each variable. The year column shows that there is no data between years 1939-1948.
-Most of the variables there are so called indexes with range between 0 and 1.
-For P4 varialbes the minimum value can be lower than zero. Durable_P4 variable is 
-highly skewed. For v2xcl_rol_VDEM we can clearly see opposite pattern, however 
+with the brilliant starting point for analysis having only two columns,
+v2x_gender_VDEM and v2x_genpp_VDEM, with a missing value. The graphs show the distribution
+for each variable. The year column shows that there is no data between the years 1939-1948.
+Most of the variables there are so-called indexes with a range between 0 and 1.
+For P4 variables the minimum value can be lower than zero. Durable_P4 variable is 
+highly skewed. For v2xcl_rol_VDEM we can clearly see an opposite pattern, however 
 there is a missing range of numbers for which we have little to no observations. 
 
 ```{r}
@@ -109,7 +112,7 @@ dfSummary(pol_ds, plain.ascii = FALSE, style = "grid",
 
 # Clustering
 
-Clustering in an unsupervised learning technique that uses machine learning 
+Clustering is an unsupervised learning technique that uses machine learning 
 algorithms to assign similar data to groups. Mostly it is used for knowledge 
 discovery of hidden patterns found within data. The main idea is to cluster 
 similar observations so that they are grouped together. The more diverse groups
@@ -126,10 +129,10 @@ be filled with chosen technique.
 pol_ds_scaled <- pol_ds %>% fill(v2x_gender_VDEM, v2x_genpp_VDEM) %>% scale %>% as_tibble()
 ```
 
-First step that this analysis will cover is the clusterability of the dataset.
+The first step that this analysis will cover is the clusterability of the dataset.
 Agnes function provides the data scientist with the agglomerative coefficient 
-that measures the amount of clustering structure found plus easy and novel way 
-to visualize the banner. Coefficient that is close to one suggest the high 
+that measures the amount of clustering structure found plus an easy and novel way 
+to visualize the banner. A coefficient that is close to one suggests the high 
 clustering structure found in the dataset.
 
 ```{r}
@@ -137,7 +140,7 @@ hc2 <- agnes(pol_ds_scaled)
 print(hc2$ac)
 ```
 
-The value suggest that chosen dataset is a very good starting point for the 
+The value shows that chosen dataset is a very good starting point for the 
 clustering analysis.
 
 ```{r}
@@ -154,21 +157,21 @@ Other methods also yield very promising results.
 ## Optimal number of clusters
 
 In order to keep high heterogeneity between the clusters and low inside them 
-appropriate number of clusters should be chosen. Very simple method is defined 
-as square root of (n/2) where n is denoted as optimal number of clusters.
+an appropriate number of clusters should be chosen. The very simple method is defined 
+as the square root of (n/2) where n is denoted as an optimal number of clusters.
 
 ```{r}
 sqrt((pol_ds_scaled %>% nrow()) / 2)
 ```
 
-Now we are coming back to elbow method.
+Now we are coming back to the elbow method.
 
 ```{r}
 opt <- Optimal_Clusters_KMeans(pol_ds_scaled, max_clusters=10, plot_clusters = TRUE)
 ```
 
-Elbow method and showed within-group heterogeneity shows that 6 clusters is
-appropriate number of clusters, others may argue that 3 is the starting 
+Elbow method and showed within-group heterogeneity shows that 6 clusters are
+an appropriate number of clusters, others may argue that 3 is the starting 
 point of the linear trend decrease.
 
 ```{r}
@@ -179,19 +182,19 @@ opt <- Optimal_Clusters_KMeans(pol_ds_scaled,
                                criterion = 'silhouette')
 ```
 
-The other method uses silhouette index to find best number of groups inside the data set which 
+The other method uses silhouette index to find the best number of groups inside the data set which 
 shows the maximum value for 2 clusters and lowest for 6. Measure method takes 
 into account what is the difference between points that belong to the same 
 cluster and what is the difference between different clusters. 
 
-Methods presented above are not very formalized due to their graphical way 
+The methods presented above are not very formalized due to their graphical way 
 of presenting results. One way to address this drawback is a statistical 
 procedure called *gap statistics* [@gap_Statistics]. The concept is based on the 
-graph of log(W_k) by making comparison with its expectation under an appropriate
-null reference distribution of the data. For latter one appropriate reference distribution 
-need to be found in the data. Then the estimation of the optimal number of 
+graph of log(W_k) by making a comparison with its expectation under an appropriate
+null reference distribution of the data. For the latter one appropriate reference distribution 
+needs to be found in the data. Then the estimation of the optimal number of 
 clusters is the value of k for which log(W_k) falls the farthest below this 
-reference curve. One of the assumption of this algorithm is to have data 
+reference curve. One of the assumptions of this algorithm is to have data 
 that can be separated well.
 
 ```{r, echo = FALSE}
@@ -205,18 +208,18 @@ kable_head <- function(df){
 clusGapRes <- clusGap(pol_ds_scaled, FUN = kmeans, nstart = 20, K.max = 20, B = 60)
 ```
 
-Number of clusters proposed by this sophisticated method is equal to 13 which is 
+The number of clusters proposed by this sophisticated method is equal to 13 which is 
 presented by *"Number of clusters (method 'firstSEmax', SE.factor=1): 13"*. Mainly 
-due to its advanced methodology this number has been chosen in further analysis.
+due to its advanced methodology, this number has been chosen in further analysis.
 
 ```{r}
 chosen_size <- 13
 ```
 
 Clustering based on partition assumes that cluster center is to regard the 
-center of data points. Main pros of these kind of algorithms are their time 
+center of data points. The main pros of these kind of algorithms are their time 
 complexity and their ability to compute results very well in general. In terms of 
-drawbacks we can list following points: 
+drawbacks we can list the following points: 
 
 * do not work well with convex data,
 * are sensitive to the outliers, 
@@ -229,12 +232,12 @@ drawbacks we can list following points:
 ### Definition of K-means
 
 K-means is probably the most widely used algorithm for unsupervised learning.
-In the algorithm we shall specify number of clusters. A goal is pretty 
-straightforward, to minimize the differences within cluster and maximize 
-the differences between clusters. The way algorithm works is as follows, each of
+In the algorithm, we shall specify a number of clusters. A goal is pretty 
+straightforward, to minimize the differences within-cluster and maximize 
+the differences between clusters. The way the algorithm works are as follows, each of
 the points is assigned to the cluster, then it updates the assignments by adjusting 
 cluster boundaries according to the examples that currently fall into the cluster.
-Points are assigned to the clusters based on chosen distance metric. Then 
+Points are assigned to the clusters based on a chosen distance metric. Then 
 centers are recalculated. The process lasts until no further improvements can 
 be made in the process. Improvement to this algorithm is K-medoids which also
 deal with discrete data points, as the representative of the corresponding cluster.
@@ -252,7 +255,7 @@ fviz_cluster(pol_clusters, data = pol_ds_scaled)
 
 ### Evaluation indicators
 
-One of the metric for k-means clustering can be checking what is the ratio between cluster sum of squares and total sum of squares:
+One of the metric for k-means clustering can be checking what is the ratio between cluster sum of squares and the total sum of squares:
 
 ```{r}
 (pol_clusters$betweenss /pol_clusters$totss)*100
@@ -270,7 +273,7 @@ fviz_silhouette(sil)
 
 ### Definition of PAM
 
-PAM focuses on object that are centrally located in a cluster. The procedure 
+PAM focuses on objects that are centrally located in a cluster. The procedure 
 chooses set of medoids and iteratively replace one of the medoids with one 
 of the non-medoids and check if it improves the total distance of the 
 resulting clustering. The algorithm stops when there is no further change.
@@ -308,12 +311,12 @@ fviz_cluster(clara_flex, geom="point", ellipse.type="norm")
 
 # Hierarchical clustering
 
-Main advantage of hierarchical clustering over k-means is that there is no need
-to implicitly specify number of clusters. The algorithm itself proceeds iteratively,
+The main advantage of hierarchical clustering over k-means is that there is no need
+to implicitly specify the number of clusters. The algorithm itself proceeds iteratively,
 until there is just a single cluster. The algorithm is very often visualized
 via dendogram which is a tree structure. Two main types of hierarchical 
 clustering are widely discussed which are agglomerative [bottom up] 
-and divisive [top down]. These algorithms work well with arbitrary shape and 
+and divisive [top down]. These algorithms work well with arbitrary shapes and 
 types. The algorithms are often able to detect hierarchical relationships which 
 can be useful in many disciplines such as biology or economics. Unfortunately,
 these types of algorithms do not work efficiently with large data sets.
@@ -373,7 +376,7 @@ Compactness relates to inner cluster homogeneity, very often being measured by
 looking at the intra-cluster variance. Distance between cluster centroids is 
 often being measured when separation evaluation is presented. The non-linear 
 combination of the compactness and separation is described by the Dunn index 
-and silhouette width. Stability is evaluated in terms of consistency of a 
+and silhouette width. Stability is evaluated in terms of consistency of 
 clustering by comparing it with the clusters obtained after each 
 column is removed, one at a time. 
 
@@ -397,16 +400,16 @@ intern@measures %>%
   kable_head()
 ```
 
-The highest connectivity is associated with PAM, CLARA and model clustering 
+The highest connectivity is associated with PAM, CLARA, and model clustering 
 algorithms. It should be minimized so taking into account this technique 
-the best algorithm is diana. Silhouette value is smallest for model based 
+the best algorithm is diana. Silhouette value is smallest for model-based 
 and the maximum for diana algorithm. Based on this data we can assume diana as 
 the best algorithm.
 
 ## Choosing appropriate names for clusters
 
 Based on per cluster results we can try to name formed clusters based on these 
-values in terms of international economy.
+values in terms of the international economy.
 
 ```{r, fig.height=20, fig.width=12}
 pol_ds_long <- 
@@ -456,7 +459,7 @@ pol_ds_long %>%
   theme(legend.position = "none")
 ```
 
-List of years for each cluster which can be used for evaluation of clustering
+List of years for each cluster that can be used for evaluation of clustering
 quality using political economy knowledge.
 
 ```{r}
@@ -470,37 +473,37 @@ pol_ds %>%
 
 Short description of each cluster by year and box plots variables:
 
-1. **First cluster: observations that mostly correspond to post-war period.**
-Regulation of participation are very low and since it is the heart of 
-democracy, they indicates that there are rules for when and how elections are 
+1. **First cluster: observations that mostly correspond to the post-war period.**
+Regulation of participation is very low and since it is the heart of 
+democracy, it indicates that there are rules for when and how elections are 
 expressed [@10.1371/journal.pone.0045838].
 2. **Second cluster: political developments in Poland, Piłsudski resigned from office, 
 The May Coup resulted in overthrowing President Stanisław Wojciechowski and
 Prime Minister Wincenty Witos who were democratically elected.** What definitely 
-distinguishes this cluster is elected executive index which not essentialy 
-should highly correspond to decision what was the level of democracy, it can rather be used to
-aggregate higher-order indices. It tries to measure whether chief executive
-was elected directly or indirectly. Of course corresponding to the aforementioned 
+distinguishes this cluster is an elected executive index which not essentially 
+should highly correspond to the decision what was the level of democracy, 
+it can rather be used to aggregate higher-order indices. It tries to measure 
+whether a chief executive was elected directly or indirectly. Of course,
+corresponding to the aforementioned 
 events in Poland it is clear that this metric shall be rather low.
-3. **Third cluster: before second World war, new Polish Constitution has been adopted, Piłsudski dies.** What can be not very easily spotted here is the divided party control index.  [@10.2307/419392]
-4. **Fourth cluster: 7 important years for defense minister of Poland, Konstanty Rokossowski.** Women political participation index value has large interquartile range which can
+3. **Third cluster: before the second World war, the new Polish Constitution has been adopted, Piłsudski dies.** What can be not very easily spotted here is the divided party control index.  [@10.2307/419392]
+4. **Fourth cluster: 7 important years for defense minister of Poland, Konstanty Rokossowski.** Women political participation index value has a large interquartile range which can
 arise from Stanilist employment policies that aimed at the equality of sexes [@10.2307/3185730].
-5. **Fifth cluster: year that mainly has been affected in politcs by nearly 50,000 political prisoners that were being held in prison** that is also visible on boxplot 
-of Physical violence index, that is very low which indicates that citizens were not really safe.
+5. **Fifth cluster: a year that mainly has been affected in the politcs by nearly 50,000 political prisoners that were being held in prison** that is also visible on the boxplot 
+of the Physical violence index is very low which indicates that citizens were not really safe.
 6. **Sixth cluster: one of the most heterogeneous cluster in term of years, 4 different decades falls into this group of observations.** All dimensions despite the corruption related and regime durability have very low IQR.
 7. **Seventh cluster: second very heterogeneous cluster** ,the highest number number of observations
 belongs here. Similar to cluster sixth with medians slightly below medians of cluster sixth.
-8. **Eighth cluster: Round Table Talks that lead to political and economical reforms.** Since it is only one observation boxplots does not bring a lot of value here. It can
+8. **Eighth cluster: Round Table Talks that lead to political and economical reforms.** Since it is only one observation boxplots do not bring a lot of value here. It can
 be described as some vertical line that divides polish history into two separate 
 periods which is essentially true.
 9. **Ninth cluster: in 1990 Lech Wałęsa won the presidential election, in 1995 
 Wałęsa demanded Pawlak's resignation in January 1995.** Cluster that has the 
 highest IQR across most of the dimensions.
 10. **Tenth cluster: times after Round Table Talks excluding presidential elections.**
-Deliberative democracy index has the highest value.
-11. **Eleventh cluster: presidential elections years.** This is the onlu group of observations where the political competition
-has different values of quartiles.
-12. **Twelfth cluster: Lech Wałęsa and Lech Kaczyński presidency. ** We can cearly 
+The deliberative democracy index has the highest value.
+11. **Eleventh cluster: presidential elections years.** This is the only group of observations where the political competition has different values of quartiles.
+12. **Twelfth cluster: Lech Wałęsa and Lech Kaczyński presidency. ** We can clearly 
 see that egalitarian component index shows here that the resources inside 
 society has been distributed equally in society.
 13. **Thirteenth cluster: Andrzej Duda presidency and PiS single-party government.**
@@ -512,34 +515,36 @@ Even though women political participation index showed very high values.
 ## Gaussian mixture models
 
 The main  idea that is hidden in this algorithm is that points belong to several
-Gaussian distributions. The main advantages is that there is a proper mathematical
+Gaussian distributions. The main advantage is that there is a proper mathematical
 theory developed inside which can lead to very realistic probability of belonging.
-Considering drawbacks we cannot ommit is that many parameters need to be specified
+Considering drawbacks we cannot omit is that many parameters need to be specified
 for these algorithms.
 
 ## Density based algorithms
 
-The main idea behind these kind of algorithms is that cluster is assigned based on points density distribution of data points. DBSCAN algorithm is the most widely discussed algorithm that takes into account two parameters. The first one is the radius of the neighborhood. The second one is is the minimum number of points that belongs to the neighborhood.
+The main idea behind these kind of algorithms is that cluster is assigned based on 
+the points density distribution of data points. DBSCAN algorithm is the most widely discussed algorithm that takes into account two parameters. The first one is the radius of the neighborhood. The second one is the minimum number of points that belong to the neighborhood.
 
 ## Model Based Clustering
 
-The most important part of this algorithms is that for each cluster different, the best model is fitted. Two main kinds of model-based clustering algorithms can be distinguished which are based on statistical learning method (COBWEB, GMM) and the other based on neural network learning method (SOM and ART).
+The most important part of these algorithms is that for each cluster different, the best model is fitted. Two main kinds of model-based clustering algorithms can be distinguished which are based on a statistical learning method (COBWEB, GMM) and the other based on the neural network learning method (SOM and ART).
 
 # Dimensionality Reduction
 
-The idea that is behind dimensionality reduction is to present dataset 
+The idea that is behind dimensionality reduction is to present a dataset 
 by fewer dimensions in order to make it more interpretable, easier to visualize,
 less computationally heavy. Having a dataset with a lot of variables they 
 might be correlated with each other and a variable can be presented as 
 a combination of other features. What is important new features should not
 be correlated between themselves! 
 
-The most common approach for reducing number of features is the following:
+The most common approach for reducing a number of features is the following:
 1. Decide on data standardization. 
 2. Compute covariance matrix with all possible pairs.
 3. Based on point 2 result compute eigenvectors and eigenvalues for PCA.
 4. Find top eigenvectors and eigenvalues.
-5. New principal components are variables as constraint of the variables with highest variance.
+5. New principal components are variables as a constraint of the variables with 
+the highest variance.
 6. Develop new features with columns as eigenvectors.
 7. Recast data along new principal axes.
 
@@ -553,7 +558,7 @@ Although there a lot of variables on the plot we can clearly see that a lot of v
 
 ## MDS reduction
 
-As our data relates to social sciences we can definitely start with multidimensional scaling. Starting with definition, this is a nonlinear statistical technique originated in psychometrics. MDS keeps the distance between the points and reduces number of dimensions. Distances allow to preserve pattern and clusters. The metrics used in this methods, called proximity, describes there is a number that indicates how similar two objects are or are perceived to be. 
+As our data relates to social sciences we can definitely start with multidimensional scaling. Starting with definition, this is a nonlinear statistical technique that originated in psychometrics. MDS keeps the distance between the points and reduces a number of dimensions. Distances allow to preserve a pattern and clusters. The metrics used in this methods, called proximity, describes there is a number that indicates how similar two objects are or are perceived to be. 
 
 ## Classification of MDS
 
@@ -599,7 +604,8 @@ fit.data<-mds(dis2, ndim=2,  type="ordinal") # from smacof::
 fit.data$stress
 ```
 
-Smallest value is yield by ordinal method which is non-metric MDS type where only thing that is important is the order relations between the dissimilarities.
+The smallest value is yield by an ordinal method which is non-metric MDS type where 
+the only thing that is important is the order relations between the dissimilarities.
 
 ## Principal Component Analysis
 
@@ -607,7 +613,7 @@ Smallest value is yield by ordinal method which is non-metric MDS type where onl
 xxx.pca1<-prcomp(pol_ds_scaled, center=FALSE, scale.=FALSE) 
 ```
 
-For explaining 99% of the variance we need to take only first two Principal
+For explaining 99% of the variance we need to take only the first two Principal
 Components.
 
 ```{r}
@@ -631,7 +637,7 @@ b<-fviz_contrib(xxx.pca1, "var", axes=2, xtickslab.rt=90)
 grid.arrange(a,b,top='Contribution to the first two Principal Components')
 ```
 
-Rotated PCA allows easier interpretation of factors used in analysis due to the change in structure of components. PCA rotates components across the axis of the factors. The most commonly used option is varimax which minimizes the number of variables needed to explain a given factors. 
+Rotated PCA allows easier interpretation of factors used in analysis due to the change in the structure of components. PCA rotates components across the axis of the factors. The most commonly used option is varimax which minimizes the number of variables needed to explain the given factors. 
 
 ```{r}
 xxx.pca4<-principal(pol_ds_scaled, nfactors=2, rotate="varimax")
@@ -668,16 +674,16 @@ fviz_pca_ind(xxx.pca1, col.ind="cos2", geom="point", gradient.cols=c("white", "#
 
 # Summary
 
-The problem of estimating number of clusters in dataset can be quite hard 
-which then result in yielding unexpected results. Domain experts 
-may claim that 13 clusters in dataset with 89 observations is surprisingly a lot.
-On the other hand the so called gap statistics have been used along with
-cluster validation package that can help with task that are performed 
+The problem of estimating a number of clusters in a dataset can be quite hard 
+which then results in yielding unexpected results. Domain experts 
+may claim that 13 clusters in the dataset with 89 observations is surprisingly a lot.
+On the other hand, the so-called gap statistics have been used along with
+cluster validation package that can help with tasks that are performed 
 without external knowledge. 
 
-The data set collections itself was very useful in understanding problems 
+The data set was very useful in understanding problems 
 of International Political Economy. The results of clustering are very promising
-in terms of their proposed definition that suggests that polish history 
-can be very appealing taking into account its variability.
+in terms of their proposed definition that suggests that the polish history 
+can be very appealing topic to know better taking into account its variability.
 
 # Bibliography
